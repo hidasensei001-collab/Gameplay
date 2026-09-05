@@ -1,820 +1,1493 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Roblox Obby 3D - Ultimate Parkour</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            user-select: none;
-            -webkit-user-select: none;
-            touch-action: none;
-        }
-        body, html {
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            background-color: #70d6ff;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        #game-canvas {
-            width: 100%;
-            height: 100%;
-            display: block;
-        }
-        #hud {
-            position: absolute;
-            top: 15px;
-            left: 15px;
-            z-index: 10;
-            pointer-events: none;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        .hud-badge {
-            background: rgba(0, 0, 0, 0.55);
-            backdrop-filter: blur(4px);
-            color: #ffffff;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 16px;
-            font-weight: bold;
-            border: 2px solid rgba(255, 255, 255, 0.8);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            text-shadow: 1px 1px 2px #000;
-        }
-        /* Mobile Controls */
-        #joystick-base {
-            position: absolute;
-            bottom: 35px;
-            left: 35px;
-            width: 120px;
-            height: 120px;
-            background: rgba(255, 255, 255, 0.25);
-            border: 3px solid rgba(255, 255, 255, 0.6);
-            border-radius: 50%;
-            z-index: 10;
-            display: none;
-        }
-        #joystick-handle {
-            position: absolute;
-            top: 35px;
-            left: 35px;
-            width: 50px;
-            height: 50px;
-            background: rgba(255, 255, 255, 0.85);
-            border-radius: 50%;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
-            pointer-events: none;
-        }
-        #btn-jump {
-            position: absolute;
-            bottom: 40px;
-            right: 35px;
-            width: 85px;
-            height: 85px;
-            background: rgba(255, 255, 255, 0.3);
-            border: 4px solid rgba(255, 255, 255, 0.8);
-            border-radius: 50%;
-            color: #ffffff;
-            font-size: 18px;
-            font-weight: 900;
-            z-index: 10;
-            display: none;
-            justify-content: center;
-            align-items: center;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-            text-shadow: 1px 1px 3px #000;
-        }
-        #btn-jump:active {
-            background: rgba(255, 255, 255, 0.65);
-            transform: scale(0.92);
-        }
-        /* UI Overlay Screen */
-        #overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.75);
-            backdrop-filter: blur(6px);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 20;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
-        }
-        #overlay.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
-        #overlay-title {
-            font-size: 42px;
-            font-weight: 900;
-            color: #ffffff;
-            margin-bottom: 10px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            text-shadow: 0 0 15px rgba(255, 255, 255, 0.6);
-        }
-        #overlay-msg {
-            font-size: 18px;
-            color: #dddddd;
-            margin-bottom: 25px;
-            text-align: center;
-            padding: 0 20px;
-        }
-        #btn-restart {
-            padding: 14px 36px;
-            font-size: 20px;
-            font-weight: bold;
-            color: #ffffff;
-            background: linear-gradient(135deg, #ff4757, #ff6b81);
-            border: none;
-            border-radius: 30px;
-            cursor: pointer;
-            box-shadow: 0 5px 0 #b32b38, 0 8px 15px rgba(0,0,0,0.4);
-            transition: transform 0.1s ease;
-        }
-        #btn-restart:active {
-            transform: translateY(4px);
-            box-shadow: 0 1px 0 #b32b38, 0 4px 8px rgba(0,0,0,0.4);
-        }
-    </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#07152f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>BLOCKVERSE ADVENTURE</title>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.185.1/build/three.module.js"
+  }
+}
+</script>
+
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#07152f;color:#fff;font-family:Arial,Helvetica,sans-serif;touch-action:none}
+button{font:inherit;border:0;cursor:pointer;color:#fff}
+#game{position:fixed;inset:0}
+canvas{display:block;width:100%;height:100%}
+
+#loading{
+ position:fixed;inset:0;z-index:100;background:
+ radial-gradient(circle at 50% 25%,#214ca0 0,#07152f 55%,#030817 100%);
+ display:flex;align-items:center;justify-content:center;text-align:center;
+ transition:.5s
+}
+.loaderBox{width:min(520px,88vw)}
+.logo{
+ font-size:clamp(34px,9vw,70px);font-weight:1000;letter-spacing:5px;
+ text-shadow:0 7px 0 #16285b,0 0 35px #39c9ff;
+}
+.logo span{color:#51e7ff}
+.subtitle{font-size:13px;letter-spacing:4px;color:#b9d7ff;margin:12px 0 28px}
+.progress{height:10px;background:#172852;border-radius:20px;overflow:hidden;box-shadow:inset 0 0 8px #000}
+#progressBar{height:100%;width:0;background:linear-gradient(90deg,#32d5ff,#7b5cff,#ff58d0);transition:.2s}
+#loadingText{margin-top:14px;color:#a8c8ff;font-size:13px}
+#tapPlay{
+ margin-top:28px;padding:15px 34px;border-radius:18px;
+ background:linear-gradient(135deg,#26c6ff,#735cff);
+ font-weight:900;letter-spacing:1px;
+ box-shadow:0 12px 30px #0006;display:none
+}
+
+#menu,#panel,#dialog,#pause{
+ position:fixed;z-index:40;inset:0;display:none;
+ background:linear-gradient(135deg,#07152fe8,#0a1a35e8);
+ backdrop-filter:blur(14px);align-items:center;justify-content:center
+}
+.menuBox,.panelBox,.pauseBox{
+ width:min(650px,92vw);max-height:88vh;overflow:auto;
+ padding:26px;border:1px solid #ffffff22;border-radius:28px;
+ background:linear-gradient(145deg,#102650ee,#07152fee);
+ box-shadow:0 25px 70px #0009
+}
+.menuTitle{font-size:clamp(30px,7vw,55px);font-weight:1000;text-align:center;letter-spacing:3px}
+.menuTitle span{color:#45ddff}
+.menuSub{text-align:center;color:#a8c6ee;margin:5px 0 25px}
+.menuGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.menuBtn{
+ min-height:58px;border-radius:17px;
+ background:linear-gradient(135deg,#17366d,#10244b);
+ border:1px solid #ffffff16;font-weight:800;
+ transition:.15s;box-shadow:0 8px 20px #0003
+}
+.menuBtn:hover{transform:translateY(-2px);background:linear-gradient(135deg,#20518e,#493a9b)}
+.menuBtn.primary{grid-column:1/-1;background:linear-gradient(135deg,#18caff,#6859ff);font-size:18px}
+.closeBtn{margin-top:18px;width:100%;height:48px;border-radius:14px;background:#ffffff12}
+.sectionTitle{font-size:23px;font-weight:900;margin-bottom:16px}
+.card{
+ padding:16px;border-radius:18px;background:#ffffff0b;border:1px solid #ffffff12;
+ margin-bottom:10px
+}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.small{font-size:12px;color:#9db6db}
+.actionBtn{
+ padding:10px 15px;border-radius:12px;background:#2769d9;font-weight:800
+}
+.danger{background:#a93d59}
+.optionGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.option{
+ padding:13px;border-radius:14px;background:#ffffff0b;border:2px solid transparent;
+ text-align:center
+}
+.option.selected{border-color:#46ddff;background:#1b4d78}
+.swatch{width:32px;height:32px;border-radius:50%;margin:auto auto 7px;border:2px solid #fff5}
+
+#hud{position:fixed;inset:0;z-index:10;pointer-events:none}
+#stats{
+ position:absolute;top:max(14px,env(safe-area-inset-top));left:14px;
+ padding:10px 13px;border-radius:17px;background:#06152caa;
+ backdrop-filter:blur(10px);border:1px solid #ffffff18;min-width:175px
+}
+.avatarName{font-weight:900;font-size:13px}
+.level{color:#63e4ff;font-weight:900;font-size:12px}
+.xpBar{height:7px;border-radius:10px;background:#17294b;margin-top:6px;overflow:hidden}
+#xpFill{height:100%;width:0;background:linear-gradient(90deg,#32e4ff,#a35cff)}
+#coins{
+ position:absolute;top:max(14px,env(safe-area-inset-top));right:14px;
+ padding:11px 16px;border-radius:17px;background:#06152caa;
+ border:1px solid #ffffff18;font-weight:1000;color:#ffe36c
+}
+#menuHUD{
+ position:absolute;right:14px;top:65px;width:45px;height:45px;border-radius:14px;
+ background:#06152ccc;border:1px solid #ffffff1c;pointer-events:auto
+}
+#hint{
+ position:absolute;left:50%;bottom:25%;transform:translateX(-50%);
+ padding:11px 18px;border-radius:14px;background:#07152ddd;
+ border:1px solid #ffffff18;font-weight:800;display:none
+}
+#toast{
+ position:absolute;left:50%;top:14%;transform:translateX(-50%);
+ padding:12px 19px;border-radius:15px;background:#07152df2;
+ border:1px solid #5ce8ff66;box-shadow:0 10px 35px #0008;
+ font-weight:900;opacity:0;transition:.25s
+}
+#fps{
+ position:absolute;right:14px;bottom:12px;font-size:11px;color:#9fb7d8;
+ display:none
+}
+
+#mobile{
+ position:fixed;inset:0;z-index:20;pointer-events:none
+}
+#joystick{
+ position:absolute;left:22px;bottom:max(24px,env(safe-area-inset-bottom));
+ width:122px;height:122px;border-radius:50%;
+ background:#ffffff0d;border:2px solid #ffffff25;pointer-events:auto
+}
+#stick{
+ position:absolute;width:52px;height:52px;left:33px;top:33px;border-radius:50%;
+ background:linear-gradient(145deg,#ffffff35,#ffffff12);
+ border:1px solid #ffffff35;box-shadow:0 5px 18px #0005
+}
+.mobileButtons{
+ position:absolute;right:18px;bottom:max(22px,env(safe-area-inset-bottom));
+ display:grid;grid-template-columns:repeat(2,66px);gap:10px;pointer-events:auto
+}
+.mbtn{
+ width:66px;height:58px;border-radius:18px;background:#081a36d9;
+ border:1px solid #ffffff20;font-weight:1000;font-size:11px;
+ box-shadow:0 7px 20px #0006
+}
+.mbtn.jump{height:72px;grid-row:span 2;background:linear-gradient(145deg,#1acaff,#6058ed)}
+.mbtn.active{transform:scale(.94);background:#315da8}
+#actionBtn{background:linear-gradient(145deg,#704fff,#b347c9)}
+
+#dialogBox{
+ width:min(520px,90vw);padding:23px;border-radius:24px;
+ background:linear-gradient(145deg,#142e59,#091a37);
+ border:1px solid #ffffff20;box-shadow:0 25px 70px #0009
+}
+#dialogName{color:#4fe3ff;font-weight:1000}
+#dialogText{font-size:17px;line-height:1.55;margin:10px 0 20px}
+.dialogActions{display:flex;gap:10px}.dialogActions button{flex:1;height:48px;border-radius:14px;background:#286bd4;font-weight:900}
+
+#miniGame{
+ position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;
+ background:#06142fee;backdrop-filter:blur(10px)
+}
+.miniBox{width:min(520px,90vw);padding:25px;border-radius:25px;background:#102650;border:1px solid #ffffff22;text-align:center}
+#miniTitle{font-size:29px;font-weight:1000}
+#miniInfo{font-size:18px;margin:15px}
+#miniStart{padding:14px 25px;border-radius:15px;background:#27c9ff;font-weight:900}
+
+@media(max-width:700px){
+ .menuGrid{grid-template-columns:1fr}
+ .menuBtn.primary{grid-column:auto}
+ .optionGrid{grid-template-columns:repeat(2,1fr)}
+}
+@media(orientation:portrait){
+ #hint:before{content:"Putar perangkat ke landscape untuk pengalaman terbaik • "}
+}
+</style>
 </head>
+
 <body>
 
-    <canvas id="game-canvas"></canvas>
-
-    <div id="hud">
-        <div class="hud-badge" id="hud-stage">Stage: 1 / 3</div>
-        <div class="hud-badge" id="hud-checkpoint">Checkpoint: Start Platform</div>
-    </div>
-
-    <div id="joystick-base">
-        <div id="joystick-handle"></div>
-    </div>
-    <div id="btn-jump">JUMP</div>
-
-    <div id="overlay">
-        <div id="overlay-title">GAME OVER</div>
-        <div id="overlay-msg">Kamu terjatuh ke dalam lava!</div>
-        <button id="btn-restart">RESTART</button>
-    </div>
-
-    <script>
-        // --- SYNTHETIC AUDIO ENGINE (Web Audio API) ---
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        let audioCtx = null;
-
-        function initAudio() {
-            if (!audioCtx) audioCtx = new AudioContext();
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-        }
-
-        function playSound(type) {
-            if (!audioCtx) return;
-            const now = audioCtx.currentTime;
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-
-            if (type === 'jump') {
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(160, now);
-                osc.frequency.exponentialRampToValueAtTime(420, now + 0.15);
-                gain.gain.setValueAtTime(0.3, now);
-                gain.gain.linearRampToValueAtTime(0, now + 0.15);
-                osc.start(now);
-                osc.stop(now + 0.15);
-            } else if (type === 'lava') {
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(220, now);
-                osc.frequency.linearRampToValueAtTime(60, now + 0.35);
-                gain.gain.setValueAtTime(0.4, now);
-                gain.gain.linearRampToValueAtTime(0, now + 0.35);
-                osc.start(now);
-                osc.stop(now + 0.35);
-            } else if (type === 'checkpoint') {
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(523.25, now);
-                osc.frequency.setValueAtTime(659.25, now + 0.08);
-                osc.frequency.setValueAtTime(783.99, now + 0.16);
-                gain.gain.setValueAtTime(0.35, now);
-                gain.gain.linearRampToValueAtTime(0, now + 0.35);
-                osc.start(now);
-                osc.stop(now + 0.35);
-            } else if (type === 'win') {
-                const notes = [523.25, 659.25, 783.99, 1046.50];
-                notes.forEach((freq, idx) => {
-                    const o = audioCtx.createOscillator();
-                    const g = audioCtx.createGain();
-                    o.connect(g);
-                    g.connect(audioCtx.destination);
-                    o.type = 'square';
-                    o.frequency.setValueAtTime(freq, now + idx * 0.12);
-                    g.gain.setValueAtTime(0.25, now + idx * 0.12);
-                    g.gain.linearRampToValueAtTime(0, now + idx * 0.12 + 0.25);
-                    o.start(now + idx * 0.12);
-                    o.stop(now + idx * 0.12 + 0.25);
-                });
-            }
-        }
-
-        // --- GAME ENGINE SETUP ---
-        const canvas = document.getElementById('game-canvas');
-        const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x70d6ff);
-        scene.fog = new THREE.FogExp2(0x70d6ff, 0.012);
-
-        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-
-        // --- LIGHTS ---
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.65);
-        scene.add(ambientLight);
-
-        const dirLight = new THREE.DirectionalLight(0xffffff, 0.85);
-        dirLight.position.set(30, 50, 20);
-        dirLight.castShadow = true;
-        dirLight.shadow.mapSize.width = 2048;
-        dirLight.shadow.mapSize.height = 2048;
-        dirLight.shadow.camera.near = 0.5;
-        dirLight.shadow.camera.far = 180;
-        const d = 50;
-        dirLight.shadow.camera.left = -d;
-        dirLight.shadow.camera.right = d;
-        dirLight.shadow.camera.top = d;
-        dirLight.shadow.camera.bottom = -d;
-        dirLight.shadow.bias = -0.0005;
-        scene.add(dirLight);
-
-        // --- DECORATIVE CLOUDS ---
-        function createClouds() {
-            const cloudGroup = new THREE.Group();
-            const cloudMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85 });
-            for (let i = 0; i < 20; i++) {
-                const cloud = new THREE.Group();
-                const pCount = 3 + Math.floor(Math.random() * 3);
-                for (let j = 0; j < pCount; j++) {
-                    const m = new THREE.Mesh(new THREE.BoxGeometry(6 + Math.random()*4, 3 + Math.random()*2, 6 + Math.random()*4), cloudMat);
-                    m.position.set(j * 3, Math.random() * 2, Math.random() * 3);
-                    cloud.add(m);
-                }
-                cloud.position.set((Math.random() - 0.5) * 200, 25 + Math.random() * 15, -Math.random() * 180);
-                cloudGroup.add(cloud);
-            }
-            scene.add(cloudGroup);
-        }
-        createClouds();
-
-        // --- ROBLOX HUMANOID AVATAR ---
-        function createRobloxAvatar() {
-            const group = new THREE.Group();
-            const headMat = new THREE.MeshToonMaterial({ color: 0xFFD700 });
-            const torsoMat = new THREE.MeshToonMaterial({ color: 0x00A2FF });
-            const limbMat = new THREE.MeshToonMaterial({ color: 0x228B22 });
-
-            // Head
-            const head = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.8), headMat);
-            head.position.y = 1.9;
-            head.castShadow = true;
-            group.add(head);
-
-            // Eyes
-            const eyeMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
-            const eyeL = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.05), eyeMat);
-            eyeL.position.set(-0.2, 2.0, -0.41);
-            const eyeR = eyeL.clone();
-            eyeR.position.x = 0.2;
-            group.add(eyeL, eyeR);
-
-            // Torso
-            const torso = new THREE.Mesh(new THREE.BoxGeometry(1.0, 1.2, 0.5), torsoMat);
-            torso.position.y = 1.0;
-            torso.castShadow = true;
-            group.add(torso);
-
-            // Arms
-            const leftArm = new THREE.Mesh(new THREE.BoxGeometry(0.4, 1.1, 0.4), headMat);
-            leftArm.position.set(-0.72, 0.95, 0);
-            leftArm.castShadow = true;
-            group.add(leftArm);
-
-            const rightArm = leftArm.clone();
-            rightArm.position.x = 0.72;
-            group.add(rightArm);
-
-            // Legs
-            const leftLeg = new THREE.Mesh(new THREE.BoxGeometry(0.45, 1.0, 0.45), limbMat);
-            leftLeg.position.set(-0.26, -0.1, 0);
-            leftLeg.castShadow = true;
-            group.add(leftLeg);
-
-            const rightLeg = leftLeg.clone();
-            rightLeg.position.x = 0.26;
-            group.add(rightLeg);
-
-            scene.add(group);
-            return { group, head, torso, leftArm, rightArm, leftLeg, rightLeg };
-        }
-
-        const avatar = createRobloxAvatar();
-
-        // --- WORLD & OBBY PLATFORMS ---
-        const platforms = [];
-        const movingPlatforms = [];
-
-        function addPlatform(x, y, z, w, h, d, color, type = 'normal', extra = {}) {
-            const geo = new THREE.BoxGeometry(w, h, d);
-            const mat = new THREE.MeshToonMaterial({
-                color: color,
-                emissive: type === 'lava' ? 0xcc0000 : 0x000000
-            });
-            const mesh = new THREE.Mesh(geo, mat);
-            mesh.position.set(x, y, z);
-            mesh.receiveShadow = true;
-            mesh.castShadow = (type !== 'lava');
-            scene.add(mesh);
-
-            const pObj = {
-                mesh, x, y, z, w, h, d, type,
-                prevPos: new THREE.Vector3(x, y, z),
-                ...extra
-            };
-
-            if (type === 'moving') movingPlatforms.push(pObj);
-            platforms.push(pObj);
-            return pObj;
-        }
-
-        function createCheckpointMarker(x, y, z) {
-            const flagGroup = new THREE.Group();
-            const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 3), new THREE.MeshToonMaterial({ color: 0xffffff }));
-            pole.position.y = 1.5;
-            const flag = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.8, 0.05), new THREE.MeshToonMaterial({ color: 0xff4757 }));
-            flag.position.set(0.6, 2.5, 0);
-            flagGroup.add(pole, flag);
-            flagGroup.position.set(x, y, z);
-            scene.add(flagGroup);
-            return flagGroup;
-        }
-
-        function buildLevel() {
-            // Spawn Platform
-            addPlatform(0, 0, 0, 10, 1.5, 10, 0x2ecc71, 'checkpoint', { name: 'Start Platform' });
-
-            // Stage 1: Stepping Blocks
-            addPlatform(0, 0.5, -11, 3.5, 1, 3.5, 0xe74c3c);
-            addPlatform(4, 1.2, -18, 3.5, 1, 3.5, 0xe67e22);
-            addPlatform(-4, 2.0, -25, 3.5, 1, 3.5, 0xf1c40f);
-            addPlatform(0, 2.8, -32, 3.5, 1, 3.5, 0x9b59b6);
-
-            // Checkpoint 1
-            const cp1 = addPlatform(0, 2.8, -42, 8, 1, 8, 0x1abc9c, 'checkpoint', { name: 'Stage 2 Checkpoint', stageNum: 2 });
-            createCheckpointMarker(0, 3.3, -42);
-
-            // Stage 2: Moving Platforms
-            addPlatform(0, 3.2, -53, 4.5, 1, 4.5, 0x34495e, 'moving', { axis: 'x', range: 7, speed: 2, startX: 0 });
-            addPlatform(0, 3.8, -66, 4.5, 1, 4.5, 0x34495e, 'moving', { axis: 'z', range: 6, speed: 2.5, startZ: -66 });
-
-            // Checkpoint 2
-            const cp2 = addPlatform(0, 3.8, -78, 8, 1, 8, 0x1abc9c, 'checkpoint', { name: 'Stage 3 Checkpoint', stageNum: 3 });
-            createCheckpointMarker(0, 4.3, -78);
-
-            // Stage 3: Beams & Stairs
-            addPlatform(0, 4.3, -88, 1.6, 0.8, 10, 0xe67e22);
-            addPlatform(-4.5, 5.2, -98, 2.8, 1, 2.8, 0xe74c3c);
-            addPlatform(0, 6.0, -106, 2.8, 1, 2.8, 0xf1c40f);
-            addPlatform(4.5, 6.8, -114, 2.8, 1, 2.8, 0x2ecc71);
-
-            // Finish Platform
-            const finish = addPlatform(0, 7.8, -128, 14, 1.5, 14, 0xffd700, 'finish');
-
-            // Golden Trophy Object
-            const trophy = new THREE.Mesh(
-                new THREE.OctahedronGeometry(1.2),
-                new THREE.MeshToonMaterial({ color: 0xfff000, emissive: 0xaa8800 })
-            );
-            trophy.position.set(0, 10.5, -128);
-            scene.add(trophy);
-
-            // Lava Floor
-            addPlatform(0, -8, -65, 250, 2, 250, 0xff2200, 'lava');
-        }
-        buildLevel();
-
-        // --- GAME STATE & PHYSICS VARIABLES ---
-        let playerPos = new THREE.Vector3(0, 2, 0);
-        let playerVel = new THREE.Vector3(0, 0, 0);
-        let activeCheckpoint = { pos: new THREE.Vector3(0, 1.5, 0), name: 'Start Platform', stageNum: 1 };
-        let isGrounded = false;
-        let isDead = false;
-        let hasWon = false;
-        let walkCycle = 0;
-
-        const moveSpeed = 9.0;
-        const jumpForce = 13.0;
-        const gravity = -32.0;
-
-        // Camera Orbit Angles
-        let cameraYaw = Math.PI;
-        let cameraPitch = 0.35;
-        const cameraDist = 8.5;
-
-        // --- PARTICLE SYSTEM ---
-        const particles = [];
-        function spawnParticles() {
-            const pGeo = new THREE.BoxGeometry(0.3, 0.3, 0.3);
-            const pColors = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0xff00ff, 0x00ffff];
-            for (let i = 0; i < 90; i++) {
-                const mat = new THREE.MeshBasicMaterial({ color: pColors[Math.floor(Math.random() * pColors.length)] });
-                const mesh = new THREE.Mesh(pGeo, mat);
-                mesh.position.set(0, 9.5, -128);
-                scene.add(mesh);
-                particles.push({
-                    mesh,
-                    vel: new THREE.Vector3((Math.random() - 0.5) * 14, Math.random() * 12 + 6, (Math.random() - 0.5) * 14),
-                    rot: new THREE.Vector3(Math.random() * 6, Math.random() * 6, Math.random() * 6),
-                    life: 1.0
-                });
-            }
-        }
-
-        function updateParticles(dt) {
-            for (let i = particles.length - 1; i >= 0; i--) {
-                const p = particles[i];
-                p.life -= dt * 0.45;
-                if (p.life <= 0) {
-                    scene.remove(p.mesh);
-                    p.mesh.geometry.dispose();
-                    p.mesh.material.dispose();
-                    particles.splice(i, 1);
-                    continue;
-                }
-                p.vel.y += gravity * 0.4 * dt;
-                p.mesh.position.addScaledVector(p.vel, dt);
-                p.mesh.rotation.x += p.rot.x * dt;
-                p.mesh.rotation.y += p.rot.y * dt;
-            }
-        }
-
-        // --- INPUT CONTROLS SYSTEM ---
-        const keys = {};
-        window.addEventListener('keydown', (e) => {
-            initAudio();
-            keys[e.code] = true;
-            if (e.code === 'Space') triggerJump();
-        });
-        window.addEventListener('keyup', (e) => { keys[e.code] = false; });
-
-        // Mobile Touch Joystick & Camera Orbit Logic
-        let joystickVector = { x: 0, y: 0 };
-        let joystickTouchId = null;
-        let cameraTouchId = null;
-        let joystickCenter = { x: 0, y: 0 };
-        let lastCamTouch = { x: 0, y: 0 };
-
-        const joystickBase = document.getElementById('joystick-base');
-        const joystickHandle = document.getElementById('joystick-handle');
-        const btnJump = document.getElementById('btn-jump');
-
-        if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
-            joystickBase.style.display = 'block';
-            btnJump.style.display = 'flex';
-        }
-
-        window.addEventListener('touchstart', (e) => {
-            initAudio();
-            for (let i = 0; i < e.changedTouches.length; i++) {
-                const touch = e.changedTouches[i];
-                
-                // Check Jump Button
-                const jRect = btnJump.getBoundingClientRect();
-                if (touch.clientX >= jRect.left && touch.clientX <= jRect.right &&
-                    touch.clientY >= jRect.top && touch.clientY <= jRect.bottom) {
-                    triggerJump();
-                    continue;
-                }
-
-                // Check Joystick Area (Left Half Screen)
-                if (touch.clientX < window.innerWidth * 0.45 && touch.clientY > window.innerHeight * 0.35) {
-                    if (joystickTouchId === null) {
-                        joystickTouchId = touch.identifier;
-                        const bRect = joystickBase.getBoundingClientRect();
-                        joystickCenter = { x: bRect.left + bRect.width / 2, y: bRect.top + bRect.height / 2 };
-                        updateJoystick(touch.clientX, touch.clientY);
-                    }
-                } else if (cameraTouchId === null) {
-                    // Camera Orbit Area (Right Half Screen)
-                    cameraTouchId = touch.identifier;
-                    lastCamTouch = { x: touch.clientX, y: touch.clientY };
-                }
-            }
-        }, { passive: false });
-
-        window.addEventListener('touchmove', (e) => {
-            for (let i = 0; i < e.changedTouches.length; i++) {
-                const touch = e.changedTouches[i];
-                if (touch.identifier === joystickTouchId) {
-                    updateJoystick(touch.clientX, touch.clientY);
-                } else if (touch.identifier === cameraTouchId) {
-                    const dx = touch.clientX - lastCamTouch.x;
-                    const dy = touch.clientY - lastCamTouch.y;
-                    cameraYaw += dx * 0.007;
-                    cameraPitch -= dy * 0.007;
-                    cameraPitch = Math.max(0.05, Math.min(Math.PI / 2.2, cameraPitch));
-                    lastCamTouch = { x: touch.clientX, y: touch.clientY };
-                }
-            }
-        }, { passive: false });
-
-        function handleTouchEnd(e) {
-            for (let i = 0; i < e.changedTouches.length; i++) {
-                const touch = e.changedTouches[i];
-                if (touch.identifier === joystickTouchId) {
-                    joystickTouchId = null;
-                    joystickVector = { x: 0, y: 0 };
-                    joystickHandle.style.transform = 'translate(0px, 0px)';
-                } else if (touch.identifier === cameraTouchId) {
-                    cameraTouchId = null;
-                }
-            }
-        }
-        window.addEventListener('touchend', handleTouchEnd);
-        window.addEventListener('touchcancel', handleTouchEnd);
-
-        function updateJoystick(clientX, clientY) {
-            const dx = clientX - joystickCenter.x;
-            const dy = clientY - joystickCenter.y;
-            const maxDist = 42;
-            const dist = Math.hypot(dx, dy);
-            const angle = Math.atan2(dy, dx);
-            const clamped = Math.min(dist, maxDist);
-
-            const hX = Math.cos(angle) * clamped;
-            const hY = Math.sin(angle) * clamped;
-            joystickHandle.style.transform = `translate(${hX}px, ${hY}px)`;
-            joystickVector = { x: hX / maxDist, y: hY / maxDist };
-        }
-
-        // PC Mouse Orbit
-        let isMouseDown = false;
-        let lastMousePos = { x: 0, y: 0 };
-        window.addEventListener('mousedown', (e) => {
-            initAudio();
-            isMouseDown = true;
-            lastMousePos = { x: e.clientX, y: e.clientY };
-        });
-        window.addEventListener('mousemove', (e) => {
-            if (isMouseDown) {
-                const dx = e.clientX - lastMousePos.x;
-                const dy = e.clientY - lastMousePos.y;
-                cameraYaw += dx * 0.005;
-                cameraPitch -= dy * 0.005;
-                cameraPitch = Math.max(0.05, Math.min(Math.PI / 2.2, cameraPitch));
-                lastMousePos = { x: e.clientX, y: e.clientY };
-            }
-        });
-        window.addEventListener('mouseup', () => { isMouseDown = false; });
-
-        function triggerJump() {
-            if (isGrounded && !isDead && !hasWon) {
-                playerVel.y = jumpForce;
-                isGrounded = false;
-                playSound('jump');
-            }
-        }
-
-        // --- OVERLAY & GAME LOOP MECHANICS ---
-        const overlay = document.getElementById('overlay');
-        const overlayTitle = document.getElementById('overlay-title');
-        const overlayMsg = document.getElementById('overlay-msg');
-        const btnRestart = document.getElementById('btn-restart');
-
-        function showOverlay(title, msg) {
-            overlayTitle.textContent = title;
-            overlayMsg.textContent = msg;
-            overlay.classList.add('active');
-        }
-
-        function hideOverlay() {
-            overlay.classList.remove('active');
-        }
-
-        btnRestart.addEventListener('click', () => {
-            hideOverlay();
-            respawnPlayer();
-        });
-
-        function triggerGameOver(reason) {
-            if (isDead) return;
-            isDead = true;
-            playSound('lava');
-            showOverlay("GAME OVER", reason);
-        }
-
-        function respawnPlayer() {
-            playerPos.copy(activeCheckpoint.pos);
-            avatar.group.position.copy(playerPos);
-            playerVel.set(0, 0, 0);
-            isGrounded = true;
-            isDead = false;
-            hasWon = false;
-        }
-
-        let gameTime = 0;
-        function updateMovingPlatforms(dt) {
-            gameTime += dt;
-            for (let p of movingPlatforms) {
-                p.prevPos.copy(p.mesh.position);
-                if (p.axis === 'x') {
-                    p.mesh.position.x = p.startX + Math.sin(gameTime * p.speed) * p.range;
-                } else if (p.axis === 'z') {
-                    p.mesh.position.z = p.startZ + Math.sin(gameTime * p.speed) * p.range;
-                }
-            }
-        }
-
-        function updatePlayer(dt) {
-            if (isDead || hasWon) return;
-
-            // Apply Gravity
-            playerVel.y += gravity * dt;
-
-            // Input Vector (Combined PC + Mobile)
-            let inputX = joystickVector.x;
-            let inputZ = joystickVector.y;
-
-            if (keys['KeyW'] || keys['ArrowUp']) inputZ -= 1;
-            if (keys['KeyS'] || keys['ArrowDown']) inputZ += 1;
-            if (keys['KeyA'] || keys['ArrowLeft']) inputX -= 1;
-            if (keys['KeyD'] || keys['ArrowRight']) inputX += 1;
-
-            const inputLen = Math.hypot(inputX, inputZ);
-
-            if (inputLen > 0.08) {
-                const normX = inputX / Math.max(1, inputLen);
-                const normZ = inputZ / Math.max(1, inputLen);
-
-                // Movement relative to Camera Yaw
-                const sinY = Math.sin(cameraYaw);
-                const cosY = Math.cos(cameraYaw);
-
-                const moveX = normX * cosY - normZ * sinY;
-                const moveZ = normX * sinY + normZ * cosY;
-
-                playerVel.x = moveX * moveSpeed;
-                playerVel.z = moveZ * moveSpeed;
-
-                // Smoothly Rotate Character to facing direction
-                const targetAngle = Math.atan2(moveX, moveZ);
-                let diff = targetAngle - avatar.group.rotation.y;
-                while (diff < -Math.PI) diff += Math.PI * 2;
-                while (diff > Math.PI) diff -= Math.PI * 2;
-                avatar.group.rotation.y += diff * 16 * dt;
-
-                // Walking Animation
-                walkCycle += dt * 13;
-                avatar.leftArm.rotation.x = Math.sin(walkCycle) * 0.75;
-                avatar.rightArm.rotation.x = -Math.sin(walkCycle) * 0.75;
-                avatar.leftLeg.rotation.x = -Math.sin(walkCycle) * 0.75;
-                avatar.rightLeg.rotation.x = Math.sin(walkCycle) * 0.75;
-            } else {
-                playerVel.x = 0;
-                playerVel.z = 0;
-                avatar.leftArm.rotation.x *= 0.8;
-                avatar.rightArm.rotation.x *= 0.8;
-                avatar.leftLeg.rotation.x *= 0.8;
-                avatar.rightLeg.rotation.x *= 0.8;
-            }
-
-            // Propose New Position
-            const nextX = playerPos.x + playerVel.x * dt;
-            const nextY = playerPos.y + playerVel.y * dt;
-            const nextZ = playerPos.z + playerVel.z * dt;
-
-            // Collision Detection with Platforms
-            isGrounded = false;
-            let landedPlatform = null;
-            const pRadius = 0.45;
-
-            for (let p of platforms) {
-                const minX = p.mesh.position.x - p.w / 2;
-                const maxX = p.mesh.position.x + p.w / 2;
-                const minY = p.mesh.position.y - p.h / 2;
-                const maxY = p.mesh.position.y + p.h / 2;
-                const minZ = p.mesh.position.z - p.d / 2;
-                const maxZ = p.mesh.position.z + p.d / 2;
-
-                const overlapX = (nextX + pRadius > minX) && (nextX - pRadius < maxX);
-                const overlapZ = (nextZ + pRadius > minZ) && (nextZ - pRadius < maxZ);
-
-                if (overlapX && overlapZ) {
-                    if (p.type === 'lava') {
-                        triggerGameOver("Kamu menyentuh Lava panas!");
-                        return;
-                    }
-
-                    // Landing Check
-                    if (playerPos.y >= maxY - 0.25 && nextY <= maxY) {
-                        playerPos.y = maxY;
-                        playerVel.y = 0;
-                        isGrounded = true;
-                        landedPlatform = p;
-
-                        // Trigger Checkpoint
-                        if (p.type === 'checkpoint' && activeCheckpoint.pos.z !== p.z) {
-                            activeCheckpoint = {
-                                pos: new THREE.Vector3(p.x, maxY + 0.1, p.z),
-                                name: p.name,
-                                stageNum: p.stageNum || activeCheckpoint.stageNum
-                            };
-                            playSound('checkpoint');
-                            document.getElementById('hud-stage').textContent = `Stage: ${activeCheckpoint.stageNum} / 3`;
-                            document.getElementById('hud-checkpoint').textContent = `Checkpoint: ${p.name}`;
-                        } else if (p.type === 'finish' && !hasWon) {
-                            hasWon = true;
-                            playSound('win');
-                            spawnParticles();
-                            showOverlay("STAGE COMPLETE! 🎉", "Selamat! Kamu berhasil menaklukkan Roblox Obby!");
-                        }
-                    }
-                }
-            }
-
-            if (!isGrounded) {
-                playerPos.y = nextY;
-            } else if (landedPlatform && landedPlatform.type === 'moving') {
-                // Move Player along with Moving Platform
-                const dx = landedPlatform.mesh.position.x - landedPlatform.prevPos.x;
-                const dz = landedPlatform.mesh.position.z - landedPlatform.prevPos.z;
-                playerPos.x += dx;
-                playerPos.z += dz;
-            }
-
-            playerPos.x += playerVel.x * dt;
-            playerPos.z += playerVel.z * dt;
-
-            // Abyss Fall Check
-            if (playerPos.y < -10) {
-                triggerGameOver("Kamu terjatuh ke jurang!");
-                return;
-            }
-
-            avatar.group.position.copy(playerPos);
-        }
-
-        function updateCamera() {
-            // Calculate Smooth Orbit Camera Position
-            const cx = playerPos.x + cameraDist * Math.sin(cameraYaw) * Math.cos(cameraPitch);
-            const cy = playerPos.y + 1.2 + cameraDist * Math.sin(cameraPitch);
-            const cz = playerPos.z + cameraDist * Math.cos(cameraYaw) * Math.cos(cameraPitch);
-
-            camera.position.lerp(new THREE.Vector3(cx, cy, cz), 0.2);
-            camera.lookAt(playerPos.x, playerPos.y + 1.2, playerPos.z);
-        }
-
-        // --- MAIN RENDER LOOP ---
-        const clock = new THREE.Clock();
-
-        function animate() {
-            requestAnimationFrame(animate);
-            const dt = Math.min(clock.getDelta(), 0.1);
-
-            updateMovingPlatforms(dt);
-            updatePlayer(dt);
-            updateParticles(dt);
-            updateCamera();
-
-            renderer.render(scene, camera);
-        }
-
-        // --- RESPONSIVE RESIZE ---
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-
-        // Initialize Avatar Position & Start Loop
-        respawnPlayer();
-        animate();
-    </script>
+<div id="game"></div>
+
+<div id="loading">
+ <div class="loaderBox">
+  <div class="logo">BLOCK<span>VERSE</span></div>
+  <div class="subtitle">ADVENTURE WORLD</div>
+  <div class="progress"><div id="progressBar"></div></div>
+  <div id="loadingText">Preparing world...</div>
+  <button id="tapPlay">TAP TO PLAY</button>
+ </div>
+</div>
+
+<div id="menu">
+ <div class="menuBox">
+  <div class="menuTitle">BLOCK<span>VERSE</span></div>
+  <div class="menuSub">ADVENTURE • EXPLORE • COLLECT</div>
+  <div class="menuGrid">
+   <button class="menuBtn primary" id="playBtn">▶ PLAY ADVENTURE</button>
+   <button class="menuBtn" data-panel="character">CHARACTER</button>
+   <button class="menuBtn" data-panel="shop">SHOP</button>
+   <button class="menuBtn" data-panel="inventory">INVENTORY</button>
+   <button class="menuBtn" data-panel="quests">QUESTS</button>
+   <button class="menuBtn" data-panel="achievements">ACHIEVEMENTS</button>
+   <button class="menuBtn" data-panel="settings">SETTINGS</button>
+   <button class="menuBtn" data-panel="how">HOW TO PLAY</button>
+  </div>
+ </div>
+</div>
+
+<div id="panel">
+ <div class="panelBox">
+  <div id="panelContent"></div>
+  <button class="closeBtn" id="closePanel">CLOSE</button>
+ </div>
+</div>
+
+<div id="dialog">
+ <div id="dialogBox">
+  <div id="dialogName"></div>
+  <div id="dialogText"></div>
+  <div class="dialogActions">
+   <button id="dialogAccept">ACCEPT</button>
+   <button id="dialogClose">LATER</button>
+  </div>
+ </div>
+</div>
+
+<div id="pause">
+ <div class="pauseBox">
+  <div class="sectionTitle">PAUSED</div>
+  <button class="menuBtn primary" id="resumeBtn">RESUME</button>
+  <br><br>
+  <button class="menuBtn" id="pauseSettings">SETTINGS</button>
+  <button class="menuBtn" id="pauseHow">HOW TO PLAY</button>
+  <button class="menuBtn" id="saveBtn">SAVE</button>
+  <button class="menuBtn" id="mainMenuBtn">MAIN MENU</button>
+ </div>
+</div>
+
+<div id="miniGame">
+ <div class="miniBox">
+  <div id="miniTitle">COIN RUSH</div>
+  <div id="miniInfo">Collect as many coins as possible!</div>
+  <button id="miniStart">START</button>
+ </div>
+</div>
+
+<div id="hud">
+ <div id="stats">
+  <div class="avatarName">EXPLORER</div>
+  <div class="level">LEVEL <span id="levelText">1</span></div>
+  <div class="xpBar"><div id="xpFill"></div></div>
+ </div>
+ <div id="coins">● <span id="coinText">0</span></div>
+ <button id="menuHUD">☰</button>
+ <div id="hint"></div>
+ <div id="toast"></div>
+ <div id="fps">FPS: --</div>
+</div>
+
+<div id="mobile">
+ <div id="joystick"><div id="stick"></div></div>
+ <div class="mobileButtons">
+  <button class="mbtn jump" id="jumpBtn">JUMP</button>
+  <button class="mbtn" id="sprintBtn">SPRINT</button>
+  <button class="mbtn" id="actionBtn">ACTION</button>
+ </div>
+</div>
+
+<script type="module">
+import * as THREE from "three";
+
+/* =========================================================
+   CONFIG
+========================================================= */
+const CFG={
+ key:"blockverse_adventure_save_v1",
+ worldSize:170,
+ gravity:24,
+ walkSpeed:7,
+ sprintSpeed:12,
+ jumpForce:10,
+ coinValue:10,
+ quality:{
+  LOW:{dpr:1,particles:25,view:90},
+  MEDIUM:{dpr:1.5,particles:45,view:125},
+  HIGH:{dpr:2,particles:70,view:170}
+ }
+};
+
+/* =========================================================
+   STATE
+========================================================= */
+const defaultState={
+ coins:0,xp:0,level:1,
+ quests:{coins:false,valley:false,treasure:false},
+ achievements:{},
+ inventory:{
+  outfits:["default"],accessories:["none"],effects:["none"],collectibles:[]
+ },
+ customization:{skin:"#ffd0a6",outfit:"#3f75e8",hair:"short",accessory:"none",face:"happy"},
+ unlockedAreas:["Spawn City","Green Valley"],
+ daily:{date:"",day:0},
+ settings:{quality:"AUTO",music:true,sfx:true,volume:.55,fps:false,sensitivity:1},
+ checkpoint:{x:0,y:1,z:8},
+ secret:false
+};
+
+let state=loadState();
+let quality=detectQuality();
+let gameStarted=false,paused=false;
+let currentArea="Spawn City";
+let audioCtx=null;
+let player,playerParts={};
+let velocity=new THREE.Vector3();
+let grounded=false;
+let jumpQueued=false,sprinting=false;
+let yaw=Math.PI, pitch=.38;
+let cameraTarget=new THREE.Vector3();
+let lastTime=performance.now();
+let clock=new THREE.Clock();
+let interactTarget=null;
+let coins3D=[];
+let portals=[];
+let npcs=[];
+let obstacles=[];
+let particles=[];
+let floatTexts=[];
+let worldGroups={};
+let miniGameActive=false;
+let coinRushCoins=0,coinRushTime=0;
+let obstacleCheckpoint={x:0,y:1,z:8};
+
+/* =========================================================
+   THREE CORE
+========================================================= */
+let scene,camera,renderer;
+
+try{
+ renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:"high-performance"});
+ renderer.setPixelRatio(Math.min(devicePixelRatio,CFG.quality[quality].dpr));
+ renderer.setSize(innerWidth,innerHeight);
+ renderer.shadowMap.enabled=quality!=="LOW";
+ renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+ renderer.outputColorSpace=THREE.SRGBColorSpace;
+ document.getElementById("game").appendChild(renderer.domElement);
+
+ scene=new THREE.Scene();
+ scene.background=new THREE.Color(0x79cfff);
+ scene.fog=new THREE.Fog(0x79cfff,35,CFG.quality[quality].view);
+
+ camera=new THREE.PerspectiveCamera(65,innerWidth/innerHeight,.1,300);
+ camera.position.set(0,7,12);
+}catch(e){
+ document.body.innerHTML="<div style='display:flex;align-items:center;justify-content:center;height:100vh;background:#07152f;color:white;text-align:center;padding:30px;font-family:Arial'><div><h1>WebGL Tidak Tersedia</h1><p>Perangkat atau browser ini tidak mendukung WebGL.</p><button onclick='location.reload()' style='padding:14px 25px;border:0;border-radius:12px'>REFRESH</button></div></div>";
+ throw e;
+}
+
+const hemi=new THREE.HemisphereLight(0xbde9ff,0x31512d,1.8);
+scene.add(hemi);
+
+const sun=new THREE.DirectionalLight(0xffffff,2.1);
+sun.position.set(45,70,25);
+sun.castShadow=quality!=="LOW";
+sun.shadow.mapSize.set(quality==="HIGH"?1536:1024,quality==="HIGH"?1536:1024);
+sun.shadow.camera.left=-80;
+sun.shadow.camera.right=80;
+sun.shadow.camera.top=80;
+sun.shadow.camera.bottom=-80;
+scene.add(sun);
+
+/* =========================================================
+   MATERIALS / GEOMETRY
+========================================================= */
+const mats={};
+function mat(color,rough=.8,emissive=0,ei=0){
+ return new THREE.MeshStandardMaterial({
+  color,roughness:rough,metalness:.05,
+  emissive,emissiveIntensity:ei
+ });
+}
+mats.grass=mat(0x55b95a);
+mats.grass2=mat(0x72cf65);
+mats.dirt=mat(0x9b6a43);
+mats.road=mat(0x39475b);
+mats.roadLine=mat(0xf5d45b);
+mats.water=mat(0x36bfe8,.25,0x057aa0,.25);
+mats.wood=mat(0x9a6339);
+mats.leaf=mat(0x2da65c);
+mats.stone=mat(0x718095);
+mats.crystal=mat(0x67d9ff,.3,0x20aaff,1.5);
+mats.gold=mat(0xffcf37,.25,0xff9800,.45);
+mats.portal=mat(0x8e5cff,.2,0x692aff,2);
+mats.white=mat(0xffffff);
+
+function box(w,h,d,material,x=0,y=0,z=0){
+ const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);
+ m.position.set(x,y,z);
+ m.castShadow=quality!=="LOW";
+ m.receiveShadow=true;
+ scene.add(m);
+ return m;
+}
+function cyl(r,h,material,x=0,y=0,z=0,seg=10){
+ const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,seg),material);
+ m.position.set(x,y,z);
+ m.castShadow=quality!=="LOW";
+ scene.add(m);
+ return m;
+}
+function sphere(r,material,x=0,y=0,z=0){
+ const m=new THREE.Mesh(new THREE.SphereGeometry(r,12,8),material);
+ m.position.set(x,y,z);
+ m.castShadow=quality!=="LOW";
+ scene.add(m);
+ return m;
+}
+
+/* =========================================================
+   WORLD
+========================================================= */
+function clearWorld(){
+ Object.values(worldGroups).forEach(g=>scene.remove(g));
+ worldGroups={};
+ coins3D.forEach(c=>scene.remove(c.mesh));
+ coins3D=[];
+ portals=[];
+ npcs=[];
+ obstacles=[];
+ particles=[];
+ floatTexts=[];
+}
+
+function group(name){
+ const g=new THREE.Group();g.name=name;scene.add(g);worldGroups[name]=g;return g;
+}
+
+function addTo(g,obj){g.add(obj);return obj}
+
+function makeTree(g,x,z,s=1){
+ const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.55*s,.7*s,4*s,8),mats.wood);
+ trunk.position.set(x,2*s,z);
+ trunk.castShadow=quality!=="LOW";
+ g.add(trunk);
+ for(let i=0;i<3;i++){
+  const crown=new THREE.Mesh(new THREE.IcosahedronGeometry(2.1*s,1),mats.leaf);
+  crown.position.set(x+(i-1)*.65*s,4.5*s+i*.4,z);
+  crown.scale.y=.9;
+  crown.castShadow=quality!=="LOW";
+  g.add(crown);
+ }
+}
+
+function makeHouse(g,x,z,color){
+ const body=new THREE.Mesh(new THREE.BoxGeometry(7,4.5,6),mat(color));
+ body.position.set(x,2.25,z);g.add(body);
+ const roof=new THREE.Mesh(new THREE.ConeGeometry(5.3,3,4),mat(0xe45b5b));
+ roof.position.set(x,6,z);roof.rotation.y=Math.PI/4;g.add(roof);
+ const door=new THREE.Mesh(new THREE.BoxGeometry(1.5,2.4,.15),mat(0x513322));
+ door.position.set(x,1.2,z-3.08);g.add(door);
+}
+
+function makeCoin(x,y,z,area="Spawn City",value=10){
+ const g=new THREE.Group();
+ const outer=new THREE.Mesh(new THREE.TorusGeometry(.55,.15,8,16),mats.gold);
+ const core=new THREE.Mesh(new THREE.CylinderGeometry(.45,.45,.14,12),mats.gold);
+ core.rotation.z=Math.PI/2;
+ g.add(outer,core);
+ g.position.set(x,y,z);
+ g.userData={baseY:y,area,value,collected:false};
+ scene.add(g);
+ coins3D.push({mesh:g,area,value});
+ return g;
+}
+
+function makePortal(x,y,z,label,target,color=0x8d55ff){
+ const g=new THREE.Group();
+ const ring=new THREE.Mesh(new THREE.TorusGeometry(2.2,.3,12,32),mat(color,.25,color,1.5));
+ ring.rotation.x=Math.PI/2;
+ const inner=new THREE.Mesh(new THREE.CircleGeometry(1.9,32),new THREE.MeshBasicMaterial({color,transparent:true,opacity:.22,side:THREE.DoubleSide}));
+ inner.rotation.x=Math.PI/2;
+ g.add(ring,inner);g.position.set(x,y,z);
+ g.userData={label,target};
+ scene.add(g);portals.push(g);return g;
+}
+
+function makeNPC(x,z,name,color,role){
+ const g=new THREE.Group();
+ const body=new THREE.Mesh(new THREE.BoxGeometry(1.4,1.8,1),mat(color));
+ body.position.y=1.4;g.add(body);
+ const head=new THREE.Mesh(new THREE.BoxGeometry(1.25,1.25,1.25),mat(0xffc79f));
+ head.position.y=3.0;g.add(head);
+ const hair=new THREE.Mesh(new THREE.BoxGeometry(1.32,.35,1.32),mat(0x35251f));
+ hair.position.y=3.62;g.add(hair);
+ g.position.set(x,0,z);
+ g.userData={name,role};
+ scene.add(g);npcs.push(g);return g;
+}
+
+function buildWorld(){
+ clearWorld();
+
+ const city=group("city");
+ box(75,.6,75,mats.grass,0,-.3,0);
+ box(42,.12,9,mats.road,0,.05,3);
+ box(9,.12,55,mats.road,-5,.06,0);
+ box(75,.08,75,mats.grass,0,.01,0);
+
+ for(let x=-35;x<=35;x+=10){
+  box(.12,.04,8,mats.roadLine,x,.13,3);
+ }
+ makeHouse(city,-23,-12,0x61a9e8);
+ makeHouse(city,20,-13,0xf2bd55);
+ makeHouse(city,24,17,0xb56ce0);
+
+ cyl(5,.7,mats.stone,8,.35,13,20);
+ cyl(3.7,.2,mats.water,8,.8,13,20);
+
+ makeNPC(-3,0,"MAYA",0xf06b91,"Quest Giver");
+ makeNPC(14,4,"LEO",0x55a9df,"Shop");
+ makeNPC(-19,18,"MAX",0x7cdb65,"Mini Games");
+
+ for(let i=0;i<10;i++){
+  const a=i*Math.PI*2/10;
+  makeCoin(Math.cos(a)*18,.8,Math.sin(a)*18);
+ }
+
+ /* Green Valley */
+ const valley=group("valley");
+ box(65,.5,70,mats.grass2,45,-.25,0);
+ for(let i=0;i<14;i++){
+  const x=25+Math.random()*40,z=-30+Math.random()*60;
+  makeTree(valley,x,z,.8+Math.random()*.5);
+ }
+ box(42,.15,7,mats.water,46,.15,0);
+ box(7,.5,12,mats.wood,46,.5,0);
+ for(let i=0;i<8;i++) makeCoin(27+i*5,.9,-12+(i%2)*7,"Green Valley");
+
+ /* Crystal Cave */
+ const cave=group("cave");
+ box(48,.5,45,mat(0x493d6d),-38,-.25,48);
+ for(let i=0;i<18;i++){
+  const x=-58+Math.random()*40,z=30+Math.random()*35;
+  const cr=new THREE.Mesh(new THREE.ConeGeometry(.5+Math.random()*.6,2+Math.random()*2,6),mats.crystal);
+  cr.position.set(x,1,z);cr.rotation.z=(Math.random()-.5)*.3;cave.add(cr);
+ }
+ for(let i=0;i<7;i++)makeCoin(-55+i*5,1,39+(i%2)*8,"Crystal Cave");
+
+ /* Sky Island */
+ const sky=group("sky");
+ const island=new THREE.Mesh(new THREE.CylinderGeometry(22,14,3,8),mats.grass2);
+ island.position.set(0,16,62);sky.add(island);
+ for(let i=0;i<8;i++)makeCoin(-14+i*4,17,57+(i%2)*7,"Sky Island");
+ for(let i=0;i<6;i++){
+  const p=box(4,.7,4,mats.stone,-15+i*6,17+i%2,48+i*4);
+  p.userData.obstacle=true;
+ }
+
+ /* Fun Park */
+ const park=group("park");
+ box(52,.5,40,mat(0x9562d0),55,-.25,48);
+ for(let i=0;i<6;i++){
+  const ob=box(3,2,3,mat(0xff6b65),43+i*6,1,47);
+  obstacles.push(ob);
+ }
+ for(let i=0;i<8;i++)makeCoin(40+i*5,1,58,"Fun Park");
+
+ makePortal(31,2,4,"GREEN VALLEY","Green Valley",0x39d76c);
+ makePortal(-27,2,25,"CRYSTAL CAVE","Crystal Cave",0x8e5cff);
+ makePortal(20,2,25,"FUN PARK","Fun Park",0xff5bc8);
+ makePortal(0,18,65,"SPAWN CITY","Spawn City",0x3bcfff);
+ makePortal(45,18,0,"SKY ISLAND","Sky Island",0xffd43b);
+
+ makeSecretArea();
+ updateAreaVisibility();
+}
+
+function makeSecretArea(){
+ const g=group("secret");
+ const switchObj=box(1.5,1.5,1.5,mats.gold,-7,1,29);
+ switchObj.userData.secretSwitch=true;
+ switchObj.rotation.y=.5;
+
+ const portal=makePortal(-2,2,33,"HIDDEN CAVE","Hidden Cave",0xffd43b);
+ portal.visible=false;
+ portal.userData.secretPortal=true;
+}
+
+function updateAreaVisibility(){
+ /* all areas remain visible for a seamless sandbox world */
+}
+
+/* =========================================================
+   PLAYER
+========================================================= */
+function createPlayer(){
+ if(player)scene.remove(player);
+ player=new THREE.Group();
+
+ const skin=mat(state.customization.skin);
+ const outfit=mat(state.customization.outfit);
+ const dark=mat(0x20283a);
+
+ const body=new THREE.Mesh(new THREE.BoxGeometry(1.35,1.6,.8),outfit);
+ body.position.y=1.65;player.add(body);playerParts.body=body;
+
+ const head=new THREE.Mesh(new THREE.BoxGeometry(1.35,1.35,1.25),skin);
+ head.position.y=3.1;player.add(head);playerParts.head=head;
+
+ const eyeMat=new THREE.MeshBasicMaterial({color:0x172033});
+ [-.27,.27].forEach(x=>{
+  const eye=new THREE.Mesh(new THREE.BoxGeometry(.16,.18,.05),eyeMat);
+  eye.position.set(x,3.15,-.64);player.add(eye);
+ });
+
+ const armL=new THREE.Mesh(new THREE.BoxGeometry(.42,1.5,.55),outfit);
+ armL.position.set(-.9,1.7,0);player.add(armL);playerParts.armL=armL;
+
+ const armR=armL.clone();armR.position.x=.9;player.add(armR);playerParts.armR=armR;
+
+ const legL=new THREE.Mesh(new THREE.BoxGeometry(.5,1.45,.6),dark);
+ legL.position.set(-.38,.55,0);player.add(legL);playerParts.legL=legL;
+
+ const legR=legL.clone();legR.position.x=.38;player.add(legR);playerParts.legR=legR;
+
+ if(state.customization.hair!=="none"){
+  const hair=state.customization.hair==="spiky"?new THREE.Mesh(
+   new THREE.ConeGeometry(.8,.8,6),mat(0x33251f)
+  ):new THREE.Mesh(new THREE.BoxGeometry(1.45,.4,1.3),mat(0x33251f));
+  hair.position.y=3.85;player.add(hair);playerParts.hair=hair;
+ }
+
+ if(state.customization.accessory==="gold"){
+  const hat=new THREE.Mesh(new THREE.TorusGeometry(.65,.14,8,16),mats.gold);
+  hat.rotation.x=Math.PI/2;hat.position.y=4.25;player.add(hat);playerParts.hat=hat;
+ }
+
+ player.position.set(state.checkpoint.x,state.checkpoint.y,state.checkpoint.z);
+ player.traverse(o=>{if(o.isMesh)o.castShadow=quality!=="LOW"});
+ scene.add(player);
+}
+
+/* =========================================================
+   INPUT
+========================================================= */
+const keys={};
+let joy={x:0,y:0};
+let cameraDragging=false,lastTouchX=0,lastTouchY=0;
+
+addEventListener("keydown",e=>{
+ keys[e.code]=true;
+ if(e.code==="Space"){jumpQueued=true;e.preventDefault()}
+ if(e.code==="ShiftLeft"||e.code==="ShiftRight")sprinting=true;
+ if(e.code==="Escape"&&gameStarted)togglePause();
+});
+addEventListener("keyup",e=>{
+ keys[e.code]=false;
+ if(e.code==="ShiftLeft"||e.code==="ShiftRight")sprinting=false;
+});
+
+renderer.domElement.addEventListener("pointerdown",e=>{
+ if(e.pointerType==="mouse"){
+  cameraDragging=true;lastTouchX=e.clientX;lastTouchY=e.clientY;
+ }
+});
+addEventListener("pointerup",()=>cameraDragging=false);
+addEventListener("pointermove",e=>{
+ if(cameraDragging&&gameStarted&&!paused){
+  const dx=e.clientX-lastTouchX,dy=e.clientY-lastTouchY;
+  yaw-=dx*.006*state.settings.sensitivity;
+  pitch-=dy*.004*state.settings.sensitivity;
+  pitch=Math.max(.08,Math.min(1.05,pitch));
+  lastTouchX=e.clientX;lastTouchY=e.clientY;
+ }
+});
+
+/* right-side touch camera */
+let camTouch=false;
+addEventListener("touchstart",e=>{
+ for(const t of e.changedTouches){
+  if(t.clientX>innerWidth*.43){
+   camTouch=true;lastTouchX=t.clientX;lastTouchY=t.clientY;
+  }
+ }
+},{passive:false});
+addEventListener("touchmove",e=>{
+ if(!camTouch)return;
+ for(const t of e.changedTouches){
+  if(t.clientX>innerWidth*.43){
+   const dx=t.clientX-lastTouchX,dy=t.clientY-lastTouchY;
+   yaw-=dx*.008*state.settings.sensitivity;
+   pitch-=dy*.005*state.settings.sensitivity;
+   pitch=Math.max(.08,Math.min(1.05,pitch));
+   lastTouchX=t.clientX;lastTouchY=t.clientY;
+  }
+ }
+},{passive:false});
+addEventListener("touchend",()=>camTouch=false);
+
+/* joystick */
+const joystick=document.getElementById("joystick");
+const stick=document.getElementById("stick");
+let joyActive=false;
+function updateJoy(x,y){
+ const r=45,dx=x-61,dy=y-61;
+ const len=Math.hypot(dx,dy),m=Math.min(r,len);
+ const nx=len?dx/len:0,ny=len?dy/len:0;
+ joy.x=nx*m/r;joy.y=ny*m/r;
+ stick.style.transform=`translate(${nx*m}px,${ny*m}px)`;
+}
+joystick.addEventListener("pointerdown",e=>{
+ joyActive=true;joystick.setPointerCapture(e.pointerId);
+ const r=joystick.getBoundingClientRect();
+ updateJoy(e.clientX-r.left,e.clientY-r.top);
+});
+joystick.addEventListener("pointermove",e=>{
+ if(!joyActive)return;
+ const r=joystick.getBoundingClientRect();
+ updateJoy(e.clientX-r.left,e.clientY-r.top);
+});
+joystick.addEventListener("pointerup",()=>{
+ joyActive=false;joy.x=joy.y=0;stick.style.transform="";
+});
+joystick.addEventListener("pointercancel",()=>{
+ joyActive=false;joy.x=joy.y=0;stick.style.transform="";
+});
+
+function holdButton(id,onDown,onUp){
+ const b=document.getElementById(id);
+ b.addEventListener("pointerdown",e=>{e.preventDefault();b.classList.add("active");onDown()});
+ ["pointerup","pointercancel","pointerleave"].forEach(ev=>b.addEventListener(ev,()=>{b.classList.remove("active");onUp&&onUp()}));
+}
+holdButton("jumpBtn",()=>jumpQueued=true);
+holdButton("sprintBtn",()=>sprinting=true,()=>sprinting=false);
+document.getElementById("actionBtn").addEventListener("pointerdown",e=>{e.preventDefault();doAction()});
+
+/* =========================================================
+   AUDIO
+========================================================= */
+function audio(){
+ if(!audioCtx)audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+ if(audioCtx.state==="suspended")audioCtx.resume();
+}
+function beep(freq=500,duration=.08,type="sine",gain=.05){
+ if(!state.settings.sfx)return;
+ try{
+  audio();
+  const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+  o.type=type;o.frequency.value=freq;
+  g.gain.setValueAtTime(state.settings.volume*gain,audioCtx.currentTime);
+  g.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+duration);
+  o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+duration);
+ }catch(e){}
+}
+function coinSound(){beep(900,.07,"triangle",.08);setTimeout(()=>beep(1250,.1,"triangle",.06),50)}
+function jumpSound(){beep(440,.1,"square",.04)}
+function rewardSound(){beep(500,.1);setTimeout(()=>beep(800,.12),100);setTimeout(()=>beep(1100,.15),200)}
+function portalSound(){beep(250,.15,"sawtooth",.04);setTimeout(()=>beep(600,.2,"sine",.04),120)}
+
+/* =========================================================
+   SAVE
+========================================================= */
+function cloneDefault(){
+ return JSON.parse(JSON.stringify(defaultState));
+}
+function merge(a,b){
+ for(const k in b){
+  if(b[k]&&typeof b[k]==="object"&&!Array.isArray(b[k])){
+   a[k]=merge(a[k]||{},b[k]);
+  }else a[k]=b[k];
+ }
+ return a;
+}
+function loadState(){
+ try{
+  const raw=localStorage.getItem(CFG.key);
+  return raw?merge(cloneDefault(),JSON.parse(raw)):cloneDefault();
+ }catch(e){return cloneDefault()}
+}
+function save(){
+ try{localStorage.setItem(CFG.key,JSON.stringify(state));toast("Progress tersimpan ✓")}catch(e){toast("Save gagal")}
+}
+function resetData(){
+ if(confirm("Reset seluruh progress BLOCKVERSE? Data lokal akan dihapus.")){
+  localStorage.removeItem(CFG.key);location.reload();
+ }
+}
+setInterval(()=>{if(gameStarted)saveSilent()},15000);
+function saveSilent(){try{localStorage.setItem(CFG.key,JSON.stringify(state))}catch(e){}}
+
+/* =========================================================
+   PROGRESSION
+========================================================= */
+function xpNeeded(){return 100+(state.level-1)*75}
+function addXP(amount){
+ state.xp+=amount;
+ while(state.xp>=xpNeeded()){
+  state.xp-=xpNeeded();state.level++;
+  rewardSound();toast("LEVEL UP! LEVEL "+state.level);
+  achievement("level");
+ }
+ updateHUD();
+ saveSilent();
+}
+function addCoins(amount){
+ state.coins=Math.max(0,state.coins+amount);
+ updateHUD();saveSilent();
+}
+function achievement(id){
+ if(state.achievements[id])return;
+ state.achievements[id]=true;
+ const names={
+  first:"FIRST STEPS",
+  coins:"COIN COLLECTOR",
+  explorer:"EXPLORER",
+  treasure:"TREASURE HUNTER",
+  sky:"SKY JUMPER",
+  level:"LEVEL UP"
+ };
+ toast("🏆 "+names[id]+" unlocked!");
+ rewardSound();saveSilent();
+}
+
+/* =========================================================
+   DAILY
+========================================================= */
+function dailyReward(){
+ const today=new Date().toLocaleDateString("en-CA");
+ if(state.daily.date===today)return;
+ const yesterday=new Date(Date.now()-86400000).toLocaleDateString("en-CA");
+ if(state.daily.date===yesterday)state.daily.day++;
+ else state.daily.day=1;
+ state.daily.date=today;
+ const reward=25+state.daily.day*25;
+ state.coins+=reward;
+ toast("DAILY REWARD +"+reward+" COINS");
+ rewardSound();
+ saveSilent();
+}
+
+/* =========================================================
+   COIN COLLECTION
+========================================================= */
+function collectCoins(){
+ if(!player)return;
+ for(const c of coins3D){
+  if(c.mesh.userData.collected)continue;
+  if(c.area!==currentArea && currentArea!=="Spawn City")continue;
+  if(player.position.distanceTo(c.mesh.position)<1.7){
+   c.mesh.userData.collected=true;
+   c.mesh.visible=false;
+   addCoins(c.value);
+   addXP(10);
+   coinSound();
+   burst(c.mesh.position,0xffd43b,8);
+   floatText("+10",c.mesh.position);
+   if(state.coins>=10)achievement("first");
+   if(countCollected()>=10){
+    achievement("coins");
+    if(!state.quests.coins){
+     state.quests.coins=true;addXP(100);addCoins(50);
+     toast("QUEST COMPLETE: COLLECT 10 COINS");
+    }
+   }
+  }
+ }
+}
+function countCollected(){
+ return coins3D.filter(c=>c.mesh.userData.collected).length;
+}
+
+/* =========================================================
+   MOVEMENT / COLLISION
+========================================================= */
+function getMoveInput(){
+ let x=joy.x,y=joy.y;
+ if(keys.KeyA)x-=1;if(keys.KeyD)x+=1;
+ if(keys.KeyW)y-=1;if(keys.KeyS)y+=1;
+ const v=new THREE.Vector2(x,y);
+ if(v.length()>1)v.normalize();
+ return v;
+}
+function terrainHeight(x,z){
+ if(x>25&&x<80&&z>-35&&z<35)return .25;
+ if(x<-15&&x<5&&z>25&&z<75)return .25;
+ if(x>35&&x<80&&z>30&&z<70)return .25;
+ if(Math.abs(x)<25&&z>42&&z<85)return 16;
+ return .25;
+}
+function updatePlayer(dt){
+ if(!player)return;
+
+ const input=getMoveInput();
+ const moving=input.length()>.05;
+
+ if(moving){
+  const forward=new THREE.Vector3(Math.sin(yaw),0,Math.cos(yaw));
+  const right=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw));
+  const dir=new THREE.Vector3()
+   .addScaledVector(right,input.x)
+   .addScaledVector(forward,-input.y)
+   .normalize();
+
+  const speed=sprinting?CFG.sprintSpeed:CFG.walkSpeed;
+  const target=dir.multiplyScalar(speed);
+  velocity.x=THREE.MathUtils.lerp(velocity.x,target.x,Math.min(1,dt*9));
+  velocity.z=THREE.MathUtils.lerp(velocity.z,target.z,Math.min(1,dt*9));
+
+  player.rotation.y=THREE.MathUtils.lerp(
+   player.rotation.y,Math.atan2(dir.x,dir.z),Math.min(1,dt*10)
+  );
+ }else{
+  velocity.x=THREE.MathUtils.lerp(velocity.x,0,Math.min(1,dt*10));
+  velocity.z=THREE.MathUtils.lerp(velocity.z,0,Math.min(1,dt*10));
+ }
+
+ if(jumpQueued&&grounded){
+  velocity.y=CFG.jumpForce;jumpQueued=false;grounded=false;jumpSound();
+  burst(player.position.clone().add(new THREE.Vector3(0,.1,0)),0xffffff,5);
+ }else jumpQueued=false;
+
+ velocity.y-=CFG.gravity*dt;
+ player.position.x+=velocity.x*dt;
+ player.position.y+=velocity.y*dt;
+ player.position.z+=velocity.z*dt;
+
+ const floor=terrainHeight(player.position.x,player.position.z)+.05;
+ if(player.position.y<=floor){
+  if(velocity.y<-5)burst(player.position.clone(),0xffffff,4);
+  player.position.y=floor;velocity.y=0;grounded=true;
+ }else grounded=false;
+
+ player.position.x=THREE.MathUtils.clamp(player.position.x,-78,78);
+ player.position.z=THREE.MathUtils.clamp(player.position.z,-78,88);
+
+ animatePlayer(dt,moving);
+
+ if(player.position.y< -3)respawn();
+ obstacleCollision();
+}
+
+/* =========================================================
+   PLAYER ANIMATION
+========================================================= */
+let animT=0;
+function animatePlayer(dt,moving){
+ animT+=dt*(sprinting?13:8);
+ const swing=moving?Math.sin(animT)*.65:0;
+ playerParts.armL.rotation.x=swing;
+ playerParts.armR.rotation.x=-swing;
+ playerParts.legL.rotation.x=-swing;
+ playerParts.legR.rotation.x=swing;
+ playerParts.body.position.y=1.65+(moving?Math.abs(Math.sin(animT*2))*.04:0);
+ if(!grounded){
+  playerParts.armL.rotation.x=-.35;
+  playerParts.armR.rotation.x=-.35;
+ }
+}
+function obstacleCollision(){
+ for(const o of obstacles){
+  if(!o.visible)continue;
+  const p=o.position;
+  if(Math.abs(player.position.x-p.x)<2.1&&Math.abs(player.position.z-p.z)<2.1&&player.position.y<3){
+   state.checkpoint={...obstacleCheckpoint};
+   respawn();
+   toast("Obstacle! Kembali ke checkpoint");
+   beep(150,.15,"sawtooth",.05);
+   break;
+  }
+ }
+}
+function respawn(){
+ player.position.set(state.checkpoint.x,state.checkpoint.y,state.checkpoint.z);
+ velocity.set(0,0,0);
+}
+
+/* =========================================================
+   CAMERA
+========================================================= */
+function updateCamera(dt){
+ if(!player)return;
+ const distance=9;
+ const h=Math.cos(pitch)*distance;
+ const target=new THREE.Vector3(
+  player.position.x+Math.sin(yaw)*h,
+  player.position.y+3.5+Math.sin(pitch)*distance,
+  player.position.z+Math.cos(yaw)*h
+ );
+ camera.position.lerp(target,1-Math.pow(.001,dt));
+ cameraTarget.set(player.position.x,player.position.y+1.8,player.position.z);
+ camera.lookAt(cameraTarget);
+}
+
+/* =========================================================
+   INTERACTION
+========================================================= */
+function nearestInteraction(){
+ if(!player)return null;
+ let best=null,dist=3.5;
+
+ for(const n of npcs){
+  const d=player.position.distanceTo(n.position);
+  if(d<dist){best={type:"npc",obj:n};dist=d}
+ }
+ for(const p of portals){
+  if(!p.visible)continue;
+  const d=player.position.distanceTo(p.position);
+  if(d<3.5){best={type:"portal",obj:p};dist=d}
+ }
+ const switchObj=scene.getObjectByProperty("userData",undefined);
+ /* secret switch checked directly */
+ scene.traverse(o=>{
+  if(o.userData?.secretSwitch){
+   const d=player.position.distanceTo(o.position);
+   if(d<3){best={type:"secret",obj:o};}
+  }
+ });
+ return best;
+}
+function doAction(){
+ if(!gameStarted||paused)return;
+ const target=nearestInteraction();
+ if(!target){toast("Tidak ada yang bisa dilakukan di dekatmu");return}
+
+ if(target.type==="npc"){
+  const n=target.obj;
+  if(n.userData.role==="Quest Giver")openDialog(
+   n.userData.name,
+   "Hey Explorer! Bisa bantu mengumpulkan 10 coin?",
+   ()=>{toast("Quest aktif: Collect 10 Coins");state.quests.coins=false}
+  );
+  else if(n.userData.role==="Shop")openPanel("shop");
+  else openMiniGame();
+ }
+
+ if(target.type==="portal"){
+  portalSound();
+  currentArea=target.obj.userData.target;
+  const t=target.obj.userData.target;
+  const positions={
+   "Spawn City":[0,.3,8],"Green Valley":[45,.3,-10],
+   "Crystal Cave":[-38,.3,48],"Fun Park":[55,.3,48],"Sky Island":[0,16.5,62],
+   "Hidden Cave":[-2,.3,33]
+  };
+  const pos=positions[t]||positions["Spawn City"];
+  player.position.set(...pos);
+  state.checkpoint={x:pos[0],y:pos[1],z:pos[2]};
+  if(t==="Green Valley")achievement("explorer");
+  if(t==="Sky Island"){achievement("sky");addXP(100)}
+  toast("ENTERED "+t.toUpperCase());
+ }
+
+ if(target.type==="secret"){
+  state.secret=true;
+  const p=portals.find(p=>p.userData.secretPortal);
+  if(p)p.visible=true;
+  achievement("treasure");
+  addCoins(100);addXP(300);
+  toast("SECRET AREA UNLOCKED!");
+  target.obj.visible=false;
+  save();
+ }
+}
+
+/* =========================================================
+   DIALOG
+========================================================= */
+let dialogCallback=null;
+function openDialog(name,text,cb){
+ document.getElementById("dialogName").textContent=name;
+ document.getElementById("dialogText").textContent=text;
+ dialogCallback=cb;
+ document.getElementById("dialog").style.display="flex";
+}
+document.getElementById("dialogClose").onclick=()=>document.getElementById("dialog").style.display="none";
+document.getElementById("dialogAccept").onclick=()=>{
+ document.getElementById("dialog").style.display="none";
+ if(dialogCallback)dialogCallback();
+};
+
+/* =========================================================
+   SHOP / INVENTORY / CHARACTER
+========================================================= */
+const shopItems=[
+ {id:"blue",name:"BLUE OUTFIT",price:100,type:"outfit",value:"#3f75e8"},
+ {id:"red",name:"RED OUTFIT",price:150,type:"outfit",value:"#e94e62"},
+ {id:"gold",name:"GOLDEN HAT",price:300,type:"accessory",value:"gold"},
+ {id:"rainbow",name:"RAINBOW EFFECT",price:500,type:"effect",value:"rainbow"}
+];
+
+function buyItem(item){
+ const arr=state.inventory[item.type==="outfit"?"outfits":item.type==="accessory"?"accessories":"effects"];
+ if(arr.includes(item.id)){equipItem(item);return}
+ if(state.coins<item.price){toast("Coin kamu belum cukup.");beep(150,.1);return}
+ state.coins-=item.price;arr.push(item.id);equipItem(item);rewardSound();save();
+}
+function equipItem(item){
+ if(item.type==="outfit")state.customization.outfit=item.value;
+ if(item.type==="accessory")state.customization.accessory=item.value;
+ save();createPlayer();updateHUD();toast(item.name+" equipped");
+}
+
+function openPanel(type){
+ const panel=document.getElementById("panel");
+ const c=document.getElementById("panelContent");
+ let html="";
+
+ if(type==="character"){
+  html=`<div class="sectionTitle">CHARACTER</div>
+  <div class="card"><b>SKIN COLOR</b><div class="optionGrid" style="margin-top:10px">
+  ${[
+   ["#ffd0a6","Warm"],["#f2b38e","Tan"],["#8f593f","Brown"],["#f1d1bd","Light"]
+  ].map(([v,n])=>`<div class="option ${state.customization.skin===v?"selected":""}" data-skin="${v}"><div class="swatch" style="background:${v}"></div>${n}</div>`).join("")}
+  </div></div>
+  <div class="card"><b>HAIR</b><div class="optionGrid" style="margin-top:10px">
+  ${["short","spiky","none"].map(v=>`<div class="option ${state.customization.hair===v?"selected":""}" data-hair="${v}">${v.toUpperCase()}</div>`).join("")}
+  </div></div>
+  <div class="card"><b>FACE</b><div class="optionGrid" style="margin-top:10px">
+  ${["happy","cool","star"].map(v=>`<div class="option ${state.customization.face===v?"selected":""}" data-face="${v}">${v.toUpperCase()}</div>`).join("")}
+  </div></div>`;
+ }
+
+ if(type==="shop"){
+  html=`<div class="sectionTitle">SHOP</div><div class="small">Gunakan coin untuk membuka cosmetic.</div><br>
+  ${shopItems.map(i=>`<div class="card"><div class="row"><div><b>${i.name}</b><div class="small">${i.price} COINS</div></div><button class="actionBtn" data-buy="${i.id}">BUY / EQUIP</button></div></div>`).join("")}`;
+ }
+
+ if(type==="inventory"){
+  html=`<div class="sectionTitle">INVENTORY</div>
+  <div class="card"><b>OUTFITS</b><br>${state.inventory.outfits.map(x=>`• ${x}`).join("<br>")}</div>
+  <div class="card"><b>ACCESSORIES</b><br>${state.inventory.accessories.map(x=>`• ${x}`).join("<br>")}</div>
+  <div class="card"><b>EFFECTS</b><br>${state.inventory.effects.map(x=>`• ${x}`).join("<br>")}</div>
+  <div class="card"><b>COLLECTIBLES</b><br>${state.inventory.collectibles.length?state.inventory.collectibles.join("<br>"):"Belum ada collectible."}</div>`;
+ }
+
+ if(type==="quests"){
+  const qs=[
+   ["Collect 10 Coins",state.quests.coins,"+100 XP +50 Coins"],
+   ["Explore Green Valley",state.quests.valley,"+150 XP"],
+   ["Find the Hidden Treasure",state.quests.treasure,"+300 XP"]
+  ];
+  html=`<div class="sectionTitle">QUESTS</div>${qs.map(q=>`<div class="card"><div class="row"><div><b>${q[0]}</b><div class="small">${q[2]}</div></div><strong>${q[1]?"✓ COMPLETED":"ACTIVE"}</strong></div></div>`).join("")}`;
+ }
+
+ if(type==="achievements"){
+  const names={
+   first:"FIRST STEPS",coins:"COIN COLLECTOR",explorer:"EXPLORER",
+   treasure:"TREASURE HUNTER",sky:"SKY JUMPER",level:"LEVEL UP"
+  };
+  html=`<div class="sectionTitle">ACHIEVEMENTS</div>${Object.entries(names).map(([id,n])=>
+   `<div class="card"><div class="row"><b>${n}</b><span>${state.achievements[id]?"🏆 UNLOCKED":"🔒 LOCKED"}</span></div></div>`).join("")}`;
+ }
+
+ if(type==="settings"){
+  html=`<div class="sectionTitle">SETTINGS</div>
+  <div class="card"><b>GRAPHICS</b><div class="optionGrid" style="margin-top:10px">
+  ${["LOW","MEDIUM","HIGH"].map(v=>`<div class="option ${quality===v?"selected":""}" data-quality="${v}">${v}</div>`).join("")}
+  </div><div class="small" style="margin-top:8px">AUTO: ${quality}</div></div>
+  <div class="card"><div class="row"><b>MUSIC</b><button class="actionBtn" id="musicToggle">${state.settings.music?"ON":"OFF"}</button></div></div>
+  <div class="card"><div class="row"><b>SFX</b><button class="actionBtn" id="sfxToggle">${state.settings.sfx?"ON":"OFF"}</button></div></div>
+  <div class="card"><b>CAMERA SENSITIVITY</b><input id="sens" type="range" min=".5" max="2" step=".1" value="${state.settings.sensitivity}" style="width:100%"></div>
+  <div class="card"><div class="row"><b>FPS COUNTER</b><button class="actionBtn" id="fpsToggle">${state.settings.fps?"ON":"OFF"}</button></div></div>
+  <button class="actionBtn" id="manualSave">SAVE PROGRESS</button>
+  <button class="actionBtn danger" id="resetData">RESET DATA</button>`;
+ }
+
+ if(type==="how"){
+  html=`<div class="sectionTitle">HOW TO PLAY</div>
+  <div class="card"><b>📱 MOBILE</b><br><br>Joystick kiri = bergerak.<br>Geser sisi kanan = kamera.<br>JUMP = melompat.<br>SPRINT = berlari.<br>ACTION = interaksi.</div>
+  <div class="card"><b>🖥 DESKTOP</b><br><br>WASD = bergerak<br>SPACE = lompat<br>SHIFT = sprint<br>Mouse = kamera<br>ESC = pause</div>
+  <div class="card"><b>🎯 TUJUAN</b><br><br>Jelajahi dunia, kumpulkan coin, selesaikan quest, buka area rahasia, naik level dan kumpulkan achievement.</div>`;
+ }
+
+ c.innerHTML=html;
+ panel.style.display="flex";
+
+ c.querySelectorAll("[data-skin]").forEach(el=>el.onclick=()=>{
+  state.customization.skin=el.dataset.skin;createPlayer();save();openPanel(type)
+ });
+ c.querySelectorAll("[data-hair]").forEach(el=>el.onclick=()=>{
+  state.customization.hair=el.dataset.hair;createPlayer();save();openPanel(type)
+ });
+ c.querySelectorAll("[data-face]").forEach(el=>el.onclick=()=>{
+  state.customization.face=el.dataset.face;save();openPanel(type)
+ });
+ c.querySelectorAll("[data-buy]").forEach(el=>el.onclick=()=>{
+  const item=shopItems.find(x=>x.id===el.dataset.buy);buyItem(item);openPanel(type)
+ });
+ c.querySelectorAll("[data-quality]").forEach(el=>el.onclick=()=>{
+  quality=el.dataset.quality;
+  state.settings.quality=quality;
+  applyQuality();
+  save();openPanel(type)
+ });
+
+ const music=document.getElementById("musicToggle");
+ if(music)music.onclick=()=>{state.settings.music=!state.settings.music;save();openPanel(type)};
+ const sfx=document.getElementById("sfxToggle");
+ if(sfx)sfx.onclick=()=>{state.settings.sfx=!state.settings.sfx;save();openPanel(type)};
+ const fps=document.getElementById("fpsToggle");
+ if(fps)fps.onclick=()=>{state.settings.fps=!state.settings.fps;document.getElementById("fps").style.display=state.settings.fps?"block":"none";save();openPanel(type)};
+ const sens=document.getElementById("sens");
+ if(sens)sens.oninput=()=>{state.settings.sensitivity=parseFloat(sens.value);saveSilent()};
+ const ms=document.getElementById("manualSave");
+ if(ms)ms.onclick=save;
+ const rd=document.getElementById("resetData");
+ if(rd)rd.onclick=resetData;
+}
+
+document.querySelectorAll("[data-panel]").forEach(b=>b.onclick=()=>openPanel(b.dataset.panel));
+document.getElementById("closePanel").onclick=()=>document.getElementById("panel").style.display="none";
+
+/* =========================================================
+   MINI GAME
+========================================================= */
+function openMiniGame(){
+ document.getElementById("miniGame").style.display="flex";
+ document.getElementById("miniTitle").textContent="COIN RUSH";
+ document.getElementById("miniInfo").textContent="Collect coins in the world for 30 seconds. Move quickly!";
+ document.getElementById("miniStart").textContent="START";
+}
+document.getElementById("miniStart").onclick=()=>{
+ document.getElementById("miniGame").style.display="none";
+ miniGameActive=true;coinRushCoins=0;coinRushTime=30;
+ toast("COIN RUSH STARTED!");
+ /* respawn currently collected coins temporarily */
+ coins3D.forEach(c=>{
+  if(c.area==="Fun Park"){
+   c.mesh.userData.collected=false;c.mesh.visible=true;
+  }
+ });
+ setTimeout(()=>endMiniGame(),30000);
+};
+function endMiniGame(){
+ if(!miniGameActive)return;
+ miniGameActive=false;
+ const reward=100+coinRushCoins*10;
+ addCoins(reward);addXP(100);
+ toast("COIN RUSH COMPLETE +"+reward+" COINS");
+ rewardSound();
+}
+
+/* =========================================================
+   PARTICLES / FLOAT TEXT
+========================================================= */
+function burst(pos,color,count=8){
+ const n=Math.min(count,CFG.quality[quality].particles);
+ for(let i=0;i<n;i++){
+  const m=new THREE.Mesh(
+   new THREE.BoxGeometry(.08,.08,.08),
+   new THREE.MeshBasicMaterial({color,transparent:true})
+  );
+  m.position.copy(pos);
+  m.userData.v=new THREE.Vector3(
+   (Math.random()-.5)*4,Math.random()*4,(Math.random()-.5)*4
+  );
+  m.userData.life=1;
+  scene.add(m);particles.push(m);
+ }
+}
+function floatText(text,pos){
+ const div=document.createElement("div");
+ div.textContent=text;
+ div.style.cssText="position:fixed;color:#ffe05c;font-weight:1000;font-size:18px;pointer-events:none;text-shadow:0 2px 5px #000;z-index:35";
+ document.body.appendChild(div);
+ floatTexts.push({div,pos:pos.clone(),life:1});
+}
+
+/* =========================================================
+   HUD
+========================================================= */
+function updateHUD(){
+ document.getElementById("coinText").textContent=state.coins;
+ document.getElementById("levelText").textContent=state.level;
+ document.getElementById("xpFill").style.width=(state.xp/xpNeeded()*100)+"%";
+}
+let toastTimer;
+function toast(text){
+ const el=document.getElementById("toast");
+ el.textContent=text;el.style.opacity="1";
+ clearTimeout(toastTimer);
+ toastTimer=setTimeout(()=>el.style.opacity="0",1800);
+}
+function updateHint(){
+ const h=document.getElementById("hint");
+ const t=nearestInteraction();
+ if(t){
+  h.style.display="block";
+  h.textContent=t.type==="npc"?"ACTION • "+t.obj.userData.name:
+   t.type==="portal"?"ENTER AREA • "+t.obj.userData.label:"ACTIVATE SECRET SWITCH";
+ }else h.style.display="none";
+}
+
+/* =========================================================
+   QUALITY
+========================================================= */
+function detectQuality(){
+ const s=innerWidth*innerHeight,ram=navigator.deviceMemory||4;
+ if(s<700000||ram<=2)return"LOW";
+ if(s<1500000||ram<=4)return"MEDIUM";
+ return"HIGH";
+}
+function applyQuality(){
+ const q=CFG.quality[quality];
+ renderer.setPixelRatio(Math.min(devicePixelRatio,q.dpr));
+ renderer.shadowMap.enabled=quality!=="LOW";
+ scene.fog.far=q.view;
+}
+
+/* =========================================================
+   PAUSE / MENU
+========================================================= */
+function togglePause(){
+ if(!gameStarted)return;
+ paused=!paused;
+ document.getElementById("pause").style.display=paused?"flex":"none";
+}
+document.getElementById("menuHUD").onclick=togglePause;
+document.getElementById("resumeBtn").onclick=togglePause;
+document.getElementById("saveBtn").onclick=save;
+document.getElementById("pauseSettings").onclick=()=>openPanel("settings");
+document.getElementById("pauseHow").onclick=()=>openPanel("how");
+document.getElementById("mainMenuBtn").onclick=()=>{
+ paused=false;gameStarted=false;
+ document.getElementById("pause").style.display="none";
+ document.getElementById("menu").style.display="flex";
+};
+
+/* =========================================================
+   STARTUP
+========================================================= */
+function startGame(){
+ audio();
+ gameStarted=true;paused=false;
+ document.getElementById("menu").style.display="none";
+ document.getElementById("pause").style.display="none";
+ document.getElementById("mobile").style.display="block";
+ dailyReward();
+ state.checkpoint=state.checkpoint||{x:0,y:.3,z:8};
+ currentArea="Spawn City";
+ createPlayer();
+ updateHUD();
+ toast("Welcome Explorer!");
+}
+document.getElementById("playBtn").onclick=startGame;
+document.getElementById("tapPlay").onclick=()=>{
+ document.getElementById("loading").style.opacity="0";
+ setTimeout(()=>{
+  document.getElementById("loading").style.display="none";
+  document.getElementById("menu").style.display="flex";
+ },450);
+ audio();
+};
+
+/* =========================================================
+   LOADING
+========================================================= */
+async function init(){
+ const bar=document.getElementById("progressBar");
+ const text=document.getElementById("loadingText");
+ for(let i=0;i<=100;i+=10){
+  await new Promise(r=>setTimeout(r,12));
+  bar.style.width=i+"%";
+  text.textContent=i<35?"Preparing world...":i<70?"Building adventure...":"Almost ready...";
+ }
+ buildWorld();
+ createPlayer();
+ updateHUD();
+ document.getElementById("tapPlay").style.display="inline-block";
+ text.textContent="World ready";
+}
+init();
+
+/* =========================================================
+   RENDER LOOP
+========================================================= */
+let fpsFrames=0,fpsTime=performance.now();
+
+function animate(){
+ requestAnimationFrame(animate);
+ const now=performance.now();
+ let dt=Math.min(.033,(now-lastTime)/1000);
+ lastTime=now;
+
+ if(gameStarted&&!paused){
+  updatePlayer(dt);
+  updateCamera(dt);
+  collectCoins();
+  updateHint();
+
+  /* coin animation */
+  for(const c of coins3D){
+   if(!c.mesh.visible)continue;
+   c.mesh.rotation.y+=dt*2.5;
+   c.mesh.rotation.z=Math.sin(now*.002+c.mesh.position.x)*.08;
+   c.mesh.position.y=c.mesh.userData.baseY+Math.sin(now*.003+c.mesh.position.x)*.15;
+  }
+
+  /* portals */
+  portals.forEach(p=>{
+   p.rotation.y+=dt*.7;
+   if(p.children[1])p.children[1].material.opacity=.15+.08*Math.sin(now*.004);
+  });
+
+  /* NPC animation */
+  npcs.forEach((n,i)=>{
+   n.position.y=Math.sin(now*.002+i)*.04;
+   n.rotation.y=Math.sin(now*.0008+i)*.12;
+  });
+
+  /* particles */
+  for(let i=particles.length-1;i>=0;i--){
+   const p=particles[i];
+   p.userData.life-=dt*1.7;
+   p.position.addScaledVector(p.userData.v,dt);
+   p.userData.v.y-=8*dt;
+   p.material.opacity=Math.max(0,p.userData.life);
+   if(p.userData.life<=0){
+    scene.remove(p);p.material.dispose();particles.splice(i,1);
+   }
+  }
+
+  /* floating text projection */
+  for(let i=floatTexts.length-1;i>=0;i--){
+   const f=floatTexts[i];f.life-=dt;
+   f.pos.y+=dt*1.2;
+   const v=f.pos.clone().project(camera);
+   f.div.style.left=((v.x*.5+.5)*innerWidth)+"px";
+   f.div.style.top=((-v.y*.5+.5)*innerHeight)+"px";
+   f.div.style.opacity=Math.max(0,f.life);
+   if(f.life<=0){f.div.remove();floatTexts.splice(i,1)}
+  }
+
+  if(miniGameActive){
+   coinRushTime-=dt;
+   document.getElementById("hint").textContent="COIN RUSH • "+Math.ceil(coinRushTime)+"s";
+  }
+ }
+
+ renderer.render(scene,camera);
+
+ fpsFrames++;
+ if(now-fpsTime>1000){
+  const fps=Math.round(fpsFrames*1000/(now-fpsTime));
+  document.getElementById("fps").textContent="FPS: "+fps;
+  fpsFrames=0;fpsTime=now;
+ }
+}
+animate();
+
+/* =========================================================
+   RESIZE / VISIBILITY
+========================================================= */
+addEventListener("resize",()=>{
+ camera.aspect=innerWidth/innerHeight;
+ camera.updateProjectionMatrix();
+ renderer.setSize(innerWidth,innerHeight);
+ applyQuality();
+});
+document.addEventListener("visibilitychange",()=>{
+ if(document.hidden&&gameStarted&&!paused)togglePause();
+});
+
+/* =========================================================
+   SECRET QUEST CHECK
+========================================================= */
+setInterval(()=>{
+ if(player&&player.position.x>30&&player.position.x<60&&player.position.z>-30&&player.position.z<30){
+  if(!state.quests.valley){
+   state.quests.valley=true;
+   addXP(150);
+   toast("QUEST COMPLETE: GREEN VALLEY");
+   achievement("explorer");
+  }
+ }
+},1000);
+
+/* =========================================================
+   INITIAL SETTINGS
+========================================================= */
+quality=state.settings.quality==="AUTO"?detectQuality():state.settings.quality;
+applyQuality();
+document.getElementById("fps").style.display=state.settings.fps?"block":"none";
+
+/* Mobile buttons should not block portrait UI */
+if(!("ontouchstart" in window)){
+ document.getElementById("mobile").style.opacity=".45";
+}
+</script>
 </body>
 </html>
