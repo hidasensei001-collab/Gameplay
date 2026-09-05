@@ -2,1492 +2,3358 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="theme-color" content="#07152f">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<title>BLOCKVERSE ADVENTURE</title>
-
-<script type="importmap">
-{
-  "imports": {
-    "three": "https://cdn.jsdelivr.net/npm/three@0.185.1/build/three.module.js"
-  }
-}
-</script>
+<meta name="viewport"
+      content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#07111f">
+<title>BLOCKVERSE — Open World Adventure</title>
 
 <style>
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#07152f;color:#fff;font-family:Arial,Helvetica,sans-serif;touch-action:none}
-button{font:inherit;border:0;cursor:pointer;color:#fff}
-#game{position:fixed;inset:0}
-canvas{display:block;width:100%;height:100%}
+*{
+  box-sizing:border-box;
+  -webkit-tap-highlight-color:transparent;
+  user-select:none;
+}
+html,body{
+  margin:0;
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  background:#07111f;
+  font-family:Arial,Helvetica,sans-serif;
+  color:#fff;
+}
+canvas{
+  display:block;
+  width:100%;
+  height:100%;
+  touch-action:none;
+}
+button{
+  font:inherit;
+  color:white;
+  border:0;
+  cursor:pointer;
+}
+.hidden{display:none!important}
 
+/* LOADING */
 #loading{
- position:fixed;inset:0;z-index:100;background:
- radial-gradient(circle at 50% 25%,#214ca0 0,#07152f 55%,#030817 100%);
- display:flex;align-items:center;justify-content:center;text-align:center;
- transition:.5s
+  position:fixed;
+  inset:0;
+  z-index:1000;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  background:
+    radial-gradient(circle at 50% 25%,#243b68 0,#101c35 35%,#050a13 100%);
 }
-.loaderBox{width:min(520px,88vw)}
 .logo{
- font-size:clamp(34px,9vw,70px);font-weight:1000;letter-spacing:5px;
- text-shadow:0 7px 0 #16285b,0 0 35px #39c9ff;
+  font-size:clamp(38px,10vw,78px);
+  font-weight:1000;
+  letter-spacing:-4px;
+  text-shadow:0 7px 0 #111,0 0 35px rgba(80,180,255,.6);
 }
-.logo span{color:#51e7ff}
-.subtitle{font-size:13px;letter-spacing:4px;color:#b9d7ff;margin:12px 0 28px}
-.progress{height:10px;background:#172852;border-radius:20px;overflow:hidden;box-shadow:inset 0 0 8px #000}
-#progressBar{height:100%;width:0;background:linear-gradient(90deg,#32d5ff,#7b5cff,#ff58d0);transition:.2s}
-#loadingText{margin-top:14px;color:#a8c8ff;font-size:13px}
-#tapPlay{
- margin-top:28px;padding:15px 34px;border-radius:18px;
- background:linear-gradient(135deg,#26c6ff,#735cff);
- font-weight:900;letter-spacing:1px;
- box-shadow:0 12px 30px #0006;display:none
+.logo span{color:#62d9ff}
+.loadingText{
+  margin-top:10px;
+  opacity:.7;
+  font-size:14px;
+}
+.loadingBar{
+  width:min(330px,75vw);
+  height:8px;
+  margin-top:24px;
+  border-radius:20px;
+  background:#18253c;
+  overflow:hidden;
+}
+#loadingProgress{
+  height:100%;
+  width:0%;
+  background:linear-gradient(90deg,#4de1ff,#a96cff,#ffde59);
+  transition:width .2s;
 }
 
-#menu,#panel,#dialog,#pause{
- position:fixed;z-index:40;inset:0;display:none;
- background:linear-gradient(135deg,#07152fe8,#0a1a35e8);
- backdrop-filter:blur(14px);align-items:center;justify-content:center
+/* HUD */
+#hud{
+  position:fixed;
+  inset:0;
+  z-index:20;
+  pointer-events:none;
 }
-.menuBox,.panelBox,.pauseBox{
- width:min(650px,92vw);max-height:88vh;overflow:auto;
- padding:26px;border:1px solid #ffffff22;border-radius:28px;
- background:linear-gradient(145deg,#102650ee,#07152fee);
- box-shadow:0 25px 70px #0009
+.topbar{
+  position:absolute;
+  top:max(12px,env(safe-area-inset-top));
+  left:12px;
+  right:12px;
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
 }
-.menuTitle{font-size:clamp(30px,7vw,55px);font-weight:1000;text-align:center;letter-spacing:3px}
-.menuTitle span{color:#45ddff}
-.menuSub{text-align:center;color:#a8c6ee;margin:5px 0 25px}
-.menuGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.stats{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.stat{
+  background:rgba(5,12,24,.78);
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:15px;
+  padding:8px 12px;
+  backdrop-filter:blur(10px);
+  box-shadow:0 6px 25px rgba(0,0,0,.2);
+}
+.stat small{
+  display:block;
+  opacity:.55;
+  font-size:9px;
+  text-transform:uppercase;
+}
+.stat strong{
+  font-size:15px;
+}
 .menuBtn{
- min-height:58px;border-radius:17px;
- background:linear-gradient(135deg,#17366d,#10244b);
- border:1px solid #ffffff16;font-weight:800;
- transition:.15s;box-shadow:0 8px 20px #0003
+  pointer-events:auto;
+  width:44px;
+  height:44px;
+  border-radius:14px;
+  background:rgba(5,12,24,.82);
+  border:1px solid rgba(255,255,255,.14);
+  font-size:20px;
 }
-.menuBtn:hover{transform:translateY(-2px);background:linear-gradient(135deg,#20518e,#493a9b)}
-.menuBtn.primary{grid-column:1/-1;background:linear-gradient(135deg,#18caff,#6859ff);font-size:18px}
-.closeBtn{margin-top:18px;width:100%;height:48px;border-radius:14px;background:#ffffff12}
-.sectionTitle{font-size:23px;font-weight:900;margin-bottom:16px}
-.card{
- padding:16px;border-radius:18px;background:#ffffff0b;border:1px solid #ffffff12;
- margin-bottom:10px
-}
-.row{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.small{font-size:12px;color:#9db6db}
-.actionBtn{
- padding:10px 15px;border-radius:12px;background:#2769d9;font-weight:800
-}
-.danger{background:#a93d59}
-.optionGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
-.option{
- padding:13px;border-radius:14px;background:#ffffff0b;border:2px solid transparent;
- text-align:center
-}
-.option.selected{border-color:#46ddff;background:#1b4d78}
-.swatch{width:32px;height:32px;border-radius:50%;margin:auto auto 7px;border:2px solid #fff5}
-
-#hud{position:fixed;inset:0;z-index:10;pointer-events:none}
-#stats{
- position:absolute;top:max(14px,env(safe-area-inset-top));left:14px;
- padding:10px 13px;border-radius:17px;background:#06152caa;
- backdrop-filter:blur(10px);border:1px solid #ffffff18;min-width:175px
-}
-.avatarName{font-weight:900;font-size:13px}
-.level{color:#63e4ff;font-weight:900;font-size:12px}
-.xpBar{height:7px;border-radius:10px;background:#17294b;margin-top:6px;overflow:hidden}
-#xpFill{height:100%;width:0;background:linear-gradient(90deg,#32e4ff,#a35cff)}
-#coins{
- position:absolute;top:max(14px,env(safe-area-inset-top));right:14px;
- padding:11px 16px;border-radius:17px;background:#06152caa;
- border:1px solid #ffffff18;font-weight:1000;color:#ffe36c
-}
-#menuHUD{
- position:absolute;right:14px;top:65px;width:45px;height:45px;border-radius:14px;
- background:#06152ccc;border:1px solid #ffffff1c;pointer-events:auto
+#areaName{
+  position:absolute;
+  left:50%;
+  top:75px;
+  transform:translateX(-50%);
+  padding:8px 16px;
+  border-radius:30px;
+  background:rgba(5,12,24,.55);
+  backdrop-filter:blur(8px);
+  font-weight:800;
+  font-size:13px;
+  opacity:.9;
 }
 #hint{
- position:absolute;left:50%;bottom:25%;transform:translateX(-50%);
- padding:11px 18px;border-radius:14px;background:#07152ddd;
- border:1px solid #ffffff18;font-weight:800;display:none
-}
-#toast{
- position:absolute;left:50%;top:14%;transform:translateX(-50%);
- padding:12px 19px;border-radius:15px;background:#07152df2;
- border:1px solid #5ce8ff66;box-shadow:0 10px 35px #0008;
- font-weight:900;opacity:0;transition:.25s
-}
-#fps{
- position:absolute;right:14px;bottom:12px;font-size:11px;color:#9fb7d8;
- display:none
+  position:absolute;
+  left:50%;
+  bottom:105px;
+  transform:translateX(-50%);
+  padding:9px 15px;
+  border-radius:30px;
+  background:rgba(0,0,0,.62);
+  font-size:12px;
+  white-space:nowrap;
 }
 
+/* MOBILE */
 #mobile{
- position:fixed;inset:0;z-index:20;pointer-events:none
+  position:fixed;
+  inset:0;
+  z-index:30;
+  pointer-events:none;
 }
 #joystick{
- position:absolute;left:22px;bottom:max(24px,env(safe-area-inset-bottom));
- width:122px;height:122px;border-radius:50%;
- background:#ffffff0d;border:2px solid #ffffff25;pointer-events:auto
+  position:absolute;
+  left:20px;
+  bottom:max(25px,env(safe-area-inset-bottom));
+  width:125px;
+  height:125px;
+  border-radius:50%;
+  background:rgba(255,255,255,.09);
+  border:2px solid rgba(255,255,255,.14);
+  pointer-events:auto;
+  touch-action:none;
 }
 #stick{
- position:absolute;width:52px;height:52px;left:33px;top:33px;border-radius:50%;
- background:linear-gradient(145deg,#ffffff35,#ffffff12);
- border:1px solid #ffffff35;box-shadow:0 5px 18px #0005
+  position:absolute;
+  width:58px;
+  height:58px;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  border-radius:50%;
+  background:rgba(255,255,255,.25);
+  border:2px solid rgba(255,255,255,.3);
 }
 .mobileButtons{
- position:absolute;right:18px;bottom:max(22px,env(safe-area-inset-bottom));
- display:grid;grid-template-columns:repeat(2,66px);gap:10px;pointer-events:auto
+  position:absolute;
+  right:18px;
+  bottom:max(25px,env(safe-area-inset-bottom));
+  display:flex;
+  align-items:flex-end;
+  gap:10px;
 }
-.mbtn{
- width:66px;height:58px;border-radius:18px;background:#081a36d9;
- border:1px solid #ffffff20;font-weight:1000;font-size:11px;
- box-shadow:0 7px 20px #0006
+.mBtn{
+  width:60px;
+  height:60px;
+  border-radius:20px;
+  background:rgba(5,12,24,.78);
+  border:1px solid rgba(255,255,255,.16);
+  box-shadow:0 8px 25px rgba(0,0,0,.2);
+  font-size:22px;
+  pointer-events:auto;
+  touch-action:none;
 }
-.mbtn.jump{height:72px;grid-row:span 2;background:linear-gradient(145deg,#1acaff,#6058ed)}
-.mbtn.active{transform:scale(.94);background:#315da8}
-#actionBtn{background:linear-gradient(145deg,#704fff,#b347c9)}
+.mBtn.big{
+  width:76px;
+  height:76px;
+  border-radius:25px;
+  font-size:28px;
+}
+#cameraZone{
+  position:absolute;
+  top:0;
+  right:0;
+  width:56%;
+  height:70%;
+  pointer-events:auto;
+  touch-action:none;
+}
 
-#dialogBox{
- width:min(520px,90vw);padding:23px;border-radius:24px;
- background:linear-gradient(145deg,#142e59,#091a37);
- border:1px solid #ffffff20;box-shadow:0 25px 70px #0009
+/* MENU / PANELS */
+.overlay{
+  position:fixed;
+  inset:0;
+  z-index:100;
+  background:rgba(2,6,14,.72);
+  backdrop-filter:blur(16px);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
 }
-#dialogName{color:#4fe3ff;font-weight:1000}
-#dialogText{font-size:17px;line-height:1.55;margin:10px 0 20px}
-.dialogActions{display:flex;gap:10px}.dialogActions button{flex:1;height:48px;border-radius:14px;background:#286bd4;font-weight:900}
+.panel{
+  width:min(760px,96vw);
+  max-height:88vh;
+  overflow:auto;
+  background:linear-gradient(145deg,rgba(18,31,55,.98),rgba(7,15,28,.98));
+  border:1px solid rgba(255,255,255,.13);
+  border-radius:28px;
+  padding:24px;
+  box-shadow:0 30px 100px rgba(0,0,0,.55);
+}
+.panel::-webkit-scrollbar{width:5px}
+.panel::-webkit-scrollbar-thumb{
+  background:#344562;
+  border-radius:20px;
+}
+.panel h1{
+  margin:0 0 7px;
+  font-size:30px;
+}
+.panel p{
+  color:#aebbd0;
+  line-height:1.5;
+}
+.menuLogo{
+  text-align:center;
+  margin:10px 0 22px;
+}
+.menuLogo .logo{
+  font-size:54px;
+}
+.menuButtons{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:12px;
+}
+.primary,.secondary,.danger{
+  min-height:52px;
+  border-radius:17px;
+  padding:0 18px;
+  font-weight:900;
+}
+.primary{
+  background:linear-gradient(135deg,#347cff,#7758ff);
+  box-shadow:0 8px 25px rgba(72,102,255,.25);
+}
+.secondary{
+  background:#18263d;
+}
+.danger{
+  background:#652938;
+}
+.primary:active,.secondary:active,.danger:active,.mBtn:active{
+  transform:scale(.97);
+}
+.closeRow{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:15px;
+}
+.close{
+  width:40px;
+  height:40px;
+  border-radius:13px;
+  background:#18263d;
+}
 
+/* CARDS */
+.cards{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+  gap:12px;
+}
+.card{
+  background:rgba(255,255,255,.055);
+  border:1px solid rgba(255,255,255,.09);
+  border-radius:18px;
+  padding:15px;
+}
+.card h3{
+  margin:0 0 6px;
+}
+.card small{color:#8e9bb0}
+.card button{
+  width:100%;
+  margin-top:12px;
+  min-height:40px;
+  border-radius:12px;
+  background:#263958;
+}
+.card button.equipped{
+  background:#246c52;
+}
+
+/* DIALOG */
+#dialogText{
+  white-space:pre-line;
+  line-height:1.6;
+}
+
+/* TOAST */
+#toast{
+  position:fixed;
+  left:50%;
+  bottom:155px;
+  transform:translateX(-50%) translateY(15px);
+  z-index:300;
+  background:rgba(4,10,20,.92);
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:16px;
+  padding:11px 17px;
+  opacity:0;
+  transition:.25s;
+  pointer-events:none;
+  box-shadow:0 10px 35px rgba(0,0,0,.35);
+}
+#toast.show{
+  opacity:1;
+  transform:translateX(-50%) translateY(0);
+}
+
+/* QUEST */
+.quest{
+  margin:10px 0;
+  padding:14px;
+  background:rgba(255,255,255,.045);
+  border-radius:16px;
+}
+.questTop{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+}
+.progress{
+  height:7px;
+  margin-top:9px;
+  background:#18253a;
+  border-radius:10px;
+  overflow:hidden;
+}
+.progress div{
+  height:100%;
+  width:0;
+  background:linear-gradient(90deg,#42e8ad,#4ca5ff);
+}
+
+/* MINI GAME */
 #miniGame{
- position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;
- background:#06142fee;backdrop-filter:blur(10px)
+  position:fixed;
+  inset:0;
+  z-index:200;
+  background:rgba(0,0,0,.62);
+  pointer-events:none;
 }
-.miniBox{width:min(520px,90vw);padding:25px;border-radius:25px;background:#102650;border:1px solid #ffffff22;text-align:center}
-#miniTitle{font-size:29px;font-weight:1000}
-#miniInfo{font-size:18px;margin:15px}
-#miniStart{padding:14px 25px;border-radius:15px;background:#27c9ff;font-weight:900}
+#miniInfo{
+  position:absolute;
+  top:90px;
+  left:50%;
+  transform:translateX(-50%);
+  background:rgba(4,10,20,.85);
+  border-radius:20px;
+  padding:12px 22px;
+  text-align:center;
+}
+#miniInfo strong{
+  display:block;
+  font-size:24px;
+}
+#miniInfo small{opacity:.6}
 
-@media(max-width:700px){
- .menuGrid{grid-template-columns:1fr}
- .menuBtn.primary{grid-column:auto}
- .optionGrid{grid-template-columns:repeat(2,1fr)}
-}
-@media(orientation:portrait){
- #hint:before{content:"Putar perangkat ke landscape untuk pengalaman terbaik • "}
+/* RESPONSIVE */
+@media(max-width:600px){
+  .panel{
+    border-radius:22px;
+    padding:18px;
+  }
+  .menuButtons{
+    grid-template-columns:1fr;
+  }
+  .stat{
+    padding:7px 9px;
+  }
+  #hint{
+    bottom:115px;
+    max-width:80vw;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
 }
 </style>
 </head>
 
 <body>
 
-<div id="game"></div>
-
 <div id="loading">
- <div class="loaderBox">
   <div class="logo">BLOCK<span>VERSE</span></div>
-  <div class="subtitle">ADVENTURE WORLD</div>
-  <div class="progress"><div id="progressBar"></div></div>
-  <div id="loadingText">Preparing world...</div>
-  <button id="tapPlay">TAP TO PLAY</button>
- </div>
-</div>
-
-<div id="menu">
- <div class="menuBox">
-  <div class="menuTitle">BLOCK<span>VERSE</span></div>
-  <div class="menuSub">ADVENTURE • EXPLORE • COLLECT</div>
-  <div class="menuGrid">
-   <button class="menuBtn primary" id="playBtn">▶ PLAY ADVENTURE</button>
-   <button class="menuBtn" data-panel="character">CHARACTER</button>
-   <button class="menuBtn" data-panel="shop">SHOP</button>
-   <button class="menuBtn" data-panel="inventory">INVENTORY</button>
-   <button class="menuBtn" data-panel="quests">QUESTS</button>
-   <button class="menuBtn" data-panel="achievements">ACHIEVEMENTS</button>
-   <button class="menuBtn" data-panel="settings">SETTINGS</button>
-   <button class="menuBtn" data-panel="how">HOW TO PLAY</button>
+  <div class="loadingText" id="loadingText">Membangun dunia...</div>
+  <div class="loadingBar">
+    <div id="loadingProgress"></div>
   </div>
- </div>
 </div>
 
-<div id="panel">
- <div class="panelBox">
-  <div id="panelContent"></div>
-  <button class="closeBtn" id="closePanel">CLOSE</button>
- </div>
-</div>
-
-<div id="dialog">
- <div id="dialogBox">
-  <div id="dialogName"></div>
-  <div id="dialogText"></div>
-  <div class="dialogActions">
-   <button id="dialogAccept">ACCEPT</button>
-   <button id="dialogClose">LATER</button>
+<div id="hud" class="hidden">
+  <div class="topbar">
+    <div class="stats">
+      <div class="stat">
+        <small>Coins</small>
+        <strong id="coinText">0</strong>
+      </div>
+      <div class="stat">
+        <small>Level</small>
+        <strong id="levelText">1</strong>
+      </div>
+      <div class="stat">
+        <small>XP</small>
+        <strong id="xpText">0 / 100</strong>
+      </div>
+    </div>
+    <button class="menuBtn" id="openMenu">☰</button>
   </div>
- </div>
+
+  <div id="areaName">Spawn City</div>
+  <div id="hint">Jelajahi dunia dan lakukan apa saja!</div>
 </div>
 
-<div id="pause">
- <div class="pauseBox">
-  <div class="sectionTitle">PAUSED</div>
-  <button class="menuBtn primary" id="resumeBtn">RESUME</button>
-  <br><br>
-  <button class="menuBtn" id="pauseSettings">SETTINGS</button>
-  <button class="menuBtn" id="pauseHow">HOW TO PLAY</button>
-  <button class="menuBtn" id="saveBtn">SAVE</button>
-  <button class="menuBtn" id="mainMenuBtn">MAIN MENU</button>
- </div>
+<div id="mobile" class="hidden">
+  <div id="cameraZone"></div>
+
+  <div id="joystick">
+    <div id="stick"></div>
+  </div>
+
+  <div class="mobileButtons">
+    <button class="mBtn" id="sprintBtn">⚡</button>
+    <button class="mBtn" id="actionBtn">✦</button>
+    <button class="mBtn big" id="jumpBtn">↑</button>
+  </div>
 </div>
 
-<div id="miniGame">
- <div class="miniBox">
-  <div id="miniTitle">COIN RUSH</div>
-  <div id="miniInfo">Collect as many coins as possible!</div>
-  <button id="miniStart">START</button>
- </div>
+<div id="toast"></div>
+
+<!-- MAIN MENU -->
+<div id="menu" class="overlay">
+  <div class="panel">
+    <div class="menuLogo">
+      <div class="logo">BLOCK<span>VERSE</span></div>
+      <p>Open World • Build • Explore • Play</p>
+    </div>
+
+    <div class="menuButtons">
+      <button class="primary" id="playBtn">▶ MULAI BERMAIN</button>
+      <button class="secondary" id="characterBtn">👤 KARAKTER</button>
+      <button class="secondary" id="shopBtn">🛒 SHOP</button>
+      <button class="secondary" id="inventoryBtn">🎒 INVENTORY</button>
+      <button class="secondary" id="worldBtn">🌎 DUNIA</button>
+      <button class="secondary" id="questsBtn">🏆 AKTIVITAS</button>
+      <button class="secondary" id="settingsBtn">⚙ PENGATURAN</button>
+      <button class="secondary" id="howBtn">❔ CARA BERMAIN</button>
+    </div>
+
+    <p style="text-align:center;font-size:11px;margin-top:20px">
+      Progress tersimpan otomatis di perangkat.
+    </p>
+  </div>
 </div>
 
-<div id="hud">
- <div id="stats">
-  <div class="avatarName">EXPLORER</div>
-  <div class="level">LEVEL <span id="levelText">1</span></div>
-  <div class="xpBar"><div id="xpFill"></div></div>
- </div>
- <div id="coins">● <span id="coinText">0</span></div>
- <button id="menuHUD">☰</button>
- <div id="hint"></div>
- <div id="toast"></div>
- <div id="fps">FPS: --</div>
+<!-- GENERAL PANEL -->
+<div id="panelOverlay" class="overlay hidden">
+  <div class="panel" id="panelContent"></div>
 </div>
 
-<div id="mobile">
- <div id="joystick"><div id="stick"></div></div>
- <div class="mobileButtons">
-  <button class="mbtn jump" id="jumpBtn">JUMP</button>
-  <button class="mbtn" id="sprintBtn">SPRINT</button>
-  <button class="mbtn" id="actionBtn">ACTION</button>
- </div>
+<!-- DIALOG -->
+<div id="dialog" class="overlay hidden">
+  <div class="panel">
+    <div class="closeRow">
+      <h1 id="dialogTitle">Dialog</h1>
+      <button class="close" id="dialogClose">✕</button>
+    </div>
+    <p id="dialogText"></p>
+    <button class="primary" id="dialogOk">OKE</button>
+  </div>
 </div>
+
+<!-- PAUSE -->
+<div id="pause" class="overlay hidden">
+  <div class="panel">
+    <h1>⏸ PAUSE</h1>
+    <p>Permainan dijeda.</p>
+    <div class="menuButtons">
+      <button class="primary" id="resumeBtn">▶ LANJUT</button>
+      <button class="secondary" id="pauseSaveBtn">💾 SIMPAN</button>
+      <button class="secondary" id="pauseMenuBtn">⌂ MENU UTAMA</button>
+    </div>
+  </div>
+</div>
+
+<!-- MINI GAME -->
+<div id="miniGame" class="hidden">
+  <div id="miniInfo">
+    <small>COIN RUSH</small>
+    <strong id="miniTimer">30</strong>
+    <div>Coins: <span id="miniScore">0</span></div>
+  </div>
+</div>
+
+<script type="importmap">
+{
+  "imports":{
+    "three":"https://cdn.jsdelivr.net/npm/three@0.185.1/build/three.module.js"
+  }
+}
+</script>
 
 <script type="module">
+
 import * as THREE from "three";
 
 /* =========================================================
    CONFIG
 ========================================================= */
-const CFG={
- key:"blockverse_adventure_save_v1",
- worldSize:170,
- gravity:24,
- walkSpeed:7,
- sprintSpeed:12,
- jumpForce:10,
- coinValue:10,
- quality:{
-  LOW:{dpr:1,particles:25,view:90},
-  MEDIUM:{dpr:1.5,particles:45,view:125},
-  HIGH:{dpr:2,particles:70,view:170}
- }
+
+const CONFIG = {
+  worldSize:170,
+  gravity:25,
+  walkSpeed:7,
+  sprintSpeed:12,
+  jumpForce:10.5,
+  saveKey:"blockverse_open_world_v3",
+  maxDPR:1.5,
+  coinValue:10
 };
 
 /* =========================================================
    STATE
 ========================================================= */
-const defaultState={
- coins:0,xp:0,level:1,
- quests:{coins:false,valley:false,treasure:false},
- achievements:{},
- inventory:{
-  outfits:["default"],accessories:["none"],effects:["none"],collectibles:[]
- },
- customization:{skin:"#ffd0a6",outfit:"#3f75e8",hair:"short",accessory:"none",face:"happy"},
- unlockedAreas:["Spawn City","Green Valley"],
- daily:{date:"",day:0},
- settings:{quality:"AUTO",music:true,sfx:true,volume:.55,fps:false,sensitivity:1},
- checkpoint:{x:0,y:1,z:8},
- secret:false
+
+const DEFAULT_STATE = {
+  version:3,
+
+  coins:0,
+  xp:0,
+  level:1,
+
+  position:{x:0,y:1.1,z:8},
+
+  customization:{
+    skin:"blue",
+    outfit:"classic",
+    hair:"none",
+    accessory:"none",
+    face:"happy",
+    effect:"none"
+  },
+
+  inventory:[
+    "skin_blue",
+    "outfit_classic",
+    "face_happy"
+  ],
+
+  unlockedAreas:[
+    "spawn",
+    "valley",
+    "cave",
+    "sky",
+    "park"
+  ],
+
+  quests:{
+    explorer:0,
+    collector:0,
+    builder:0,
+    treasure:false
+  },
+
+  achievements:[],
+
+  daily:{
+    date:"",
+    claimed:false
+  },
+
+  settings:{
+    quality:"medium",
+    sound:true
+  },
+
+  checkpoint:{
+    area:"spawn",
+    x:0,
+    y:1.1,
+    z:8
+  }
 };
 
-let state=loadState();
-let quality=detectQuality();
-let gameStarted=false,paused=false;
-let currentArea="Spawn City";
-let audioCtx=null;
-let player,playerParts={};
-let velocity=new THREE.Vector3();
-let grounded=false;
-let jumpQueued=false,sprinting=false;
-let yaw=Math.PI, pitch=.38;
-let cameraTarget=new THREE.Vector3();
-let lastTime=performance.now();
-let clock=new THREE.Clock();
-let interactTarget=null;
-let coins3D=[];
-let portals=[];
-let npcs=[];
-let obstacles=[];
-let particles=[];
-let floatTexts=[];
-let worldGroups={};
-let miniGameActive=false;
-let coinRushCoins=0,coinRushTime=0;
-let obstacleCheckpoint={x:0,y:1,z:8};
+let state = structuredClone(DEFAULT_STATE);
+
+function normalizeState(raw){
+
+  const s = structuredClone(DEFAULT_STATE);
+
+  if(!raw || typeof raw!=="object") return s;
+
+  if(Number.isFinite(raw.coins)) s.coins=Math.max(0,raw.coins);
+  if(Number.isFinite(raw.xp)) s.xp=Math.max(0,raw.xp);
+  if(Number.isFinite(raw.level)) s.level=Math.max(1,raw.level);
+
+  if(raw.position && typeof raw.position==="object"){
+    if(Number.isFinite(raw.position.x)) s.position.x=raw.position.x;
+    if(Number.isFinite(raw.position.y)) s.position.y=raw.position.y;
+    if(Number.isFinite(raw.position.z)) s.position.z=raw.position.z;
+  }
+
+  if(raw.customization && typeof raw.customization==="object"){
+    Object.assign(s.customization,raw.customization);
+  }
+
+  if(Array.isArray(raw.inventory)){
+    s.inventory=[...new Set(raw.inventory.filter(v=>typeof v==="string"))];
+  }
+
+  if(Array.isArray(raw.unlockedAreas)){
+    s.unlockedAreas=[...new Set(raw.unlockedAreas.filter(v=>typeof v==="string"))];
+  }
+
+  if(raw.quests && typeof raw.quests==="object"){
+    Object.assign(s.quests,raw.quests);
+  }
+
+  if(Array.isArray(raw.achievements)){
+    s.achievements=[...new Set(raw.achievements.filter(v=>typeof v==="string"))];
+  }
+
+  if(raw.daily && typeof raw.daily==="object"){
+    Object.assign(s.daily,raw.daily);
+  }
+
+  if(raw.settings && typeof raw.settings==="object"){
+    Object.assign(s.settings,raw.settings);
+  }
+
+  if(raw.checkpoint && typeof raw.checkpoint==="object"){
+    Object.assign(s.checkpoint,raw.checkpoint);
+  }
+
+  return s;
+}
+
+function loadGame(){
+
+  try{
+    const raw=localStorage.getItem(CONFIG.saveKey);
+    if(raw){
+      state=normalizeState(JSON.parse(raw));
+    }
+  }catch(e){
+    console.warn("Save tidak dapat dibaca",e);
+  }
+}
+
+let saveTimer=null;
+
+function saveGame(silent=true){
+
+  try{
+    localStorage.setItem(CONFIG.saveKey,JSON.stringify(state));
+    if(!silent) toast("💾 Progress tersimpan");
+  }catch(e){
+    console.warn("Save gagal",e);
+  }
+}
+
+function scheduleSave(){
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(()=>saveGame(true),800);
+}
+
+loadGame();
+
+/* =========================================================
+   DOM
+========================================================= */
+
+const $=id=>document.getElementById(id);
+
+const loading=$("loading");
+const progress=$("loadingProgress");
+const loadingText=$("loadingText");
+
+const hud=$("hud");
+const mobile=$("mobile");
+const menu=$("menu");
+const panelOverlay=$("panelOverlay");
+const panelContent=$("panelContent");
+const dialog=$("dialog");
+const pause=$("pause");
+const miniGame=$("miniGame");
+
+let gameStarted=false;
+let paused=false;
+let currentArea="spawn";
 
 /* =========================================================
    THREE CORE
 ========================================================= */
-let scene,camera,renderer;
 
-try{
- renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:"high-performance"});
- renderer.setPixelRatio(Math.min(devicePixelRatio,CFG.quality[quality].dpr));
- renderer.setSize(innerWidth,innerHeight);
- renderer.shadowMap.enabled=quality!=="LOW";
- renderer.shadowMap.type=THREE.PCFSoftShadowMap;
- renderer.outputColorSpace=THREE.SRGBColorSpace;
- document.getElementById("game").appendChild(renderer.domElement);
+let renderer;
+let scene;
+let camera;
+let clock;
 
- scene=new THREE.Scene();
- scene.background=new THREE.Color(0x79cfff);
- scene.fog=new THREE.Fog(0x79cfff,35,CFG.quality[quality].view);
+const world=new THREE.Group();
+const dynamicWorld=new THREE.Group();
 
- camera=new THREE.PerspectiveCamera(65,innerWidth/innerHeight,.1,300);
- camera.position.set(0,7,12);
-}catch(e){
- document.body.innerHTML="<div style='display:flex;align-items:center;justify-content:center;height:100vh;background:#07152f;color:white;text-align:center;padding:30px;font-family:Arial'><div><h1>WebGL Tidak Tersedia</h1><p>Perangkat atau browser ini tidak mendukung WebGL.</p><button onclick='location.reload()' style='padding:14px 25px;border:0;border-radius:12px'>REFRESH</button></div></div>";
- throw e;
+let player;
+let playerVisual;
+
+const coins=[];
+const npcs=[];
+const portals=[];
+const obstacles=[];
+const pickups=[];
+const effects=[];
+
+let velocityY=0;
+let onGround=false;
+
+let camYaw=0;
+let camPitch=.45;
+let camDistance=8;
+
+const keys={};
+
+const moveInput={
+  x:0,
+  y:0
+};
+
+let sprinting=false;
+
+function createRenderer(){
+
+  try{
+
+    renderer=new THREE.WebGLRenderer({
+      antialias:true,
+      powerPreference:"high-performance"
+    });
+
+    renderer.setPixelRatio(
+      Math.min(window.devicePixelRatio||1,CONFIG.maxDPR)
+    );
+
+    renderer.setSize(innerWidth,innerHeight);
+
+    renderer.shadowMap.enabled=true;
+    renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+
+    renderer.outputColorSpace=THREE.SRGBColorSpace;
+
+    document.body.appendChild(renderer.domElement);
+
+  }catch(e){
+
+    loadingText.textContent=
+      "Browser tidak mendukung WebGL.";
+
+    throw e;
+  }
 }
 
-const hemi=new THREE.HemisphereLight(0xbde9ff,0x31512d,1.8);
+createRenderer();
+
+scene=new THREE.Scene();
+scene.background=new THREE.Color("#8ed9ff");
+
+scene.fog=new THREE.Fog("#8ed9ff",65,145);
+
+camera=new THREE.PerspectiveCamera(
+  60,
+  innerWidth/innerHeight,
+  .1,
+  250
+);
+
+clock=new THREE.Clock();
+
+scene.add(world);
+world.add(dynamicWorld);
+
+/* =========================================================
+   LIGHT
+========================================================= */
+
+const hemi=new THREE.HemisphereLight(
+  0xdff5ff,
+  0x526040,
+  2.2
+);
 scene.add(hemi);
 
-const sun=new THREE.DirectionalLight(0xffffff,2.1);
-sun.position.set(45,70,25);
-sun.castShadow=quality!=="LOW";
-sun.shadow.mapSize.set(quality==="HIGH"?1536:1024,quality==="HIGH"?1536:1024);
-sun.shadow.camera.left=-80;
-sun.shadow.camera.right=80;
-sun.shadow.camera.top=80;
-sun.shadow.camera.bottom=-80;
+const sun=new THREE.DirectionalLight(
+  0xffffff,
+  3
+);
+
+sun.position.set(45,70,35);
+sun.castShadow=true;
+
+sun.shadow.mapSize.set(1024,1024);
+sun.shadow.camera.left=-90;
+sun.shadow.camera.right=90;
+sun.shadow.camera.top=90;
+sun.shadow.camera.bottom=-90;
+
 scene.add(sun);
 
 /* =========================================================
-   MATERIALS / GEOMETRY
+   MATERIAL HELPERS
 ========================================================= */
-const mats={};
-function mat(color,rough=.8,emissive=0,ei=0){
- return new THREE.MeshStandardMaterial({
-  color,roughness:rough,metalness:.05,
-  emissive,emissiveIntensity:ei
- });
-}
-mats.grass=mat(0x55b95a);
-mats.grass2=mat(0x72cf65);
-mats.dirt=mat(0x9b6a43);
-mats.road=mat(0x39475b);
-mats.roadLine=mat(0xf5d45b);
-mats.water=mat(0x36bfe8,.25,0x057aa0,.25);
-mats.wood=mat(0x9a6339);
-mats.leaf=mat(0x2da65c);
-mats.stone=mat(0x718095);
-mats.crystal=mat(0x67d9ff,.3,0x20aaff,1.5);
-mats.gold=mat(0xffcf37,.25,0xff9800,.45);
-mats.portal=mat(0x8e5cff,.2,0x692aff,2);
-mats.white=mat(0xffffff);
 
-function box(w,h,d,material,x=0,y=0,z=0){
- const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);
- m.position.set(x,y,z);
- m.castShadow=quality!=="LOW";
- m.receiveShadow=true;
- scene.add(m);
- return m;
+const mats={};
+
+function mat(color,opts={}){
+  const key=color+JSON.stringify(opts);
+  if(mats[key]) return mats[key];
+
+  mats[key]=new THREE.MeshStandardMaterial({
+    color,
+    roughness:opts.roughness??.8,
+    metalness:opts.metalness??0
+  });
+
+  return mats[key];
 }
-function cyl(r,h,material,x=0,y=0,z=0,seg=10){
- const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,seg),material);
- m.position.set(x,y,z);
- m.castShadow=quality!=="LOW";
- scene.add(m);
- return m;
+
+function box(w,h,d,color,x=0,y=0,z=0){
+
+  const mesh=new THREE.Mesh(
+    new THREE.BoxGeometry(w,h,d),
+    mat(color)
+  );
+
+  mesh.position.set(x,y,z);
+  mesh.castShadow=true;
+  mesh.receiveShadow=true;
+
+  world.add(mesh);
+
+  return mesh;
 }
-function sphere(r,material,x=0,y=0,z=0){
- const m=new THREE.Mesh(new THREE.SphereGeometry(r,12,8),material);
- m.position.set(x,y,z);
- m.castShadow=quality!=="LOW";
- scene.add(m);
- return m;
+
+function cylinder(r,h,color,x=0,y=0,z=0){
+
+  const mesh=new THREE.Mesh(
+    new THREE.CylinderGeometry(r,r,h,12),
+    mat(color)
+  );
+
+  mesh.position.set(x,y,z);
+  mesh.castShadow=true;
+  mesh.receiveShadow=true;
+
+  world.add(mesh);
+
+  return mesh;
 }
 
 /* =========================================================
-   WORLD
+   WORLD HELPERS
 ========================================================= */
+
 function clearWorld(){
- Object.values(worldGroups).forEach(g=>scene.remove(g));
- worldGroups={};
- coins3D.forEach(c=>scene.remove(c.mesh));
- coins3D=[];
- portals=[];
- npcs=[];
- obstacles=[];
- particles=[];
- floatTexts=[];
+
+  while(world.children.length){
+
+    const child=world.children[world.children.length-1];
+
+    if(child===dynamicWorld) break;
+
+    world.remove(child);
+
+    child.traverse(obj=>{
+      if(obj.geometry) obj.geometry.dispose();
+    });
+  }
+
+  while(dynamicWorld.children.length){
+
+    dynamicWorld.remove(dynamicWorld.children[0]);
+  }
+
+  coins.length=0;
+  npcs.length=0;
+  portals.length=0;
+  obstacles.length=0;
+  pickups.length=0;
+  effects.length=0;
 }
 
-function group(name){
- const g=new THREE.Group();g.name=name;scene.add(g);worldGroups[name]=g;return g;
+function addGround(){
+
+  const ground=box(
+    CONFIG.worldSize,
+    1,
+    CONFIG.worldSize,
+    0x4e9d53,
+    0,
+    -.5,
+    0
+  );
+
+  ground.receiveShadow=true;
 }
 
-function addTo(g,obj){g.add(obj);return obj}
+function addRoad(x,z,w,d){
 
-function makeTree(g,x,z,s=1){
- const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.55*s,.7*s,4*s,8),mats.wood);
- trunk.position.set(x,2*s,z);
- trunk.castShadow=quality!=="LOW";
- g.add(trunk);
- for(let i=0;i<3;i++){
-  const crown=new THREE.Mesh(new THREE.IcosahedronGeometry(2.1*s,1),mats.leaf);
-  crown.position.set(x+(i-1)*.65*s,4.5*s+i*.4,z);
-  crown.scale.y=.9;
-  crown.castShadow=quality!=="LOW";
-  g.add(crown);
- }
+  box(
+    w,
+    .08,
+    d,
+    0x424b5a,
+    x,
+    .04,
+    z
+  );
 }
 
-function makeHouse(g,x,z,color){
- const body=new THREE.Mesh(new THREE.BoxGeometry(7,4.5,6),mat(color));
- body.position.set(x,2.25,z);g.add(body);
- const roof=new THREE.Mesh(new THREE.ConeGeometry(5.3,3,4),mat(0xe45b5b));
- roof.position.set(x,6,z);roof.rotation.y=Math.PI/4;g.add(roof);
- const door=new THREE.Mesh(new THREE.BoxGeometry(1.5,2.4,.15),mat(0x513322));
- door.position.set(x,1.2,z-3.08);g.add(door);
+function addTree(x,z,scale=1){
+
+  cylinder(
+    .5*scale,
+    3*scale,
+    0x75482e,
+    x,
+    1.5*scale,
+    z
+  );
+
+  const crown=new THREE.Mesh(
+    new THREE.DodecahedronGeometry(2.2*scale),
+    mat(0x2e9d55)
+  );
+
+  crown.position.set(x,4*scale,z);
+  crown.castShadow=true;
+
+  world.add(crown);
+
+  obstacles.push({
+    x,z,
+    radius:1.1*scale
+  });
 }
 
-function makeCoin(x,y,z,area="Spawn City",value=10){
- const g=new THREE.Group();
- const outer=new THREE.Mesh(new THREE.TorusGeometry(.55,.15,8,16),mats.gold);
- const core=new THREE.Mesh(new THREE.CylinderGeometry(.45,.45,.14,12),mats.gold);
- core.rotation.z=Math.PI/2;
- g.add(outer,core);
- g.position.set(x,y,z);
- g.userData={baseY:y,area,value,collected:false};
- scene.add(g);
- coins3D.push({mesh:g,area,value});
- return g;
+function addHouse(x,z,color=0xe9edf3){
+
+  box(7,4,7,color,x,2,z);
+
+  box(
+    8,
+    1.5,
+    8,
+    0xb63d4c,
+    x,
+    4.6,
+    z
+  );
+
+  box(
+    1.4,
+    2.4,
+    .2,
+    0x75452d,
+    x,
+    1.2,
+    z-3.6
+  );
+
+  obstacles.push({
+    x,z,
+    radius:4.5
+  });
 }
 
-function makePortal(x,y,z,label,target,color=0x8d55ff){
- const g=new THREE.Group();
- const ring=new THREE.Mesh(new THREE.TorusGeometry(2.2,.3,12,32),mat(color,.25,color,1.5));
- ring.rotation.x=Math.PI/2;
- const inner=new THREE.Mesh(new THREE.CircleGeometry(1.9,32),new THREE.MeshBasicMaterial({color,transparent:true,opacity:.22,side:THREE.DoubleSide}));
- inner.rotation.x=Math.PI/2;
- g.add(ring,inner);g.position.set(x,y,z);
- g.userData={label,target};
- scene.add(g);portals.push(g);return g;
+function addMountain(x,z,r=7,h=12){
+
+  const m=new THREE.Mesh(
+    new THREE.ConeGeometry(r,h,6),
+    mat(0x68798c)
+  );
+
+  m.position.set(x,h/2,z);
+  m.castShadow=true;
+  m.receiveShadow=true;
+
+  world.add(m);
 }
 
-function makeNPC(x,z,name,color,role){
- const g=new THREE.Group();
- const body=new THREE.Mesh(new THREE.BoxGeometry(1.4,1.8,1),mat(color));
- body.position.y=1.4;g.add(body);
- const head=new THREE.Mesh(new THREE.BoxGeometry(1.25,1.25,1.25),mat(0xffc79f));
- head.position.y=3.0;g.add(head);
- const hair=new THREE.Mesh(new THREE.BoxGeometry(1.32,.35,1.32),mat(0x35251f));
- hair.position.y=3.62;g.add(hair);
- g.position.set(x,0,z);
- g.userData={name,role};
- scene.add(g);npcs.push(g);return g;
+/* =========================================================
+   COINS
+========================================================= */
+
+function addCoin(x,y,z,value=10,area="spawn"){
+
+  const mesh=new THREE.Mesh(
+    new THREE.CylinderGeometry(.42,.42,.12,16),
+    mat(0xffd84d,{metalness:.45,roughness:.25})
+  );
+
+  mesh.rotation.z=Math.PI/2;
+  mesh.position.set(x,y,z);
+  mesh.castShadow=true;
+
+  dynamicWorld.add(mesh);
+
+  const obj={
+    mesh,
+    x,
+    y,
+    z,
+    value,
+    area,
+    collected:false
+  };
+
+  mesh.userData.coin=obj;
+
+  coins.push(obj);
 }
 
-function buildWorld(){
- clearWorld();
+function createCoins(){
 
- const city=group("city");
- box(75,.6,75,mats.grass,0,-.3,0);
- box(42,.12,9,mats.road,0,.05,3);
- box(9,.12,55,mats.road,-5,.06,0);
- box(75,.08,75,mats.grass,0,.01,0);
+  const areas=[
+    ["spawn",0,0],
+    ["valley",-45,-5],
+    ["cave",45,18],
+    ["sky",0,62],
+    ["park",45,-48]
+  ];
 
- for(let x=-35;x<=35;x+=10){
-  box(.12,.04,8,mats.roadLine,x,.13,3);
- }
- makeHouse(city,-23,-12,0x61a9e8);
- makeHouse(city,20,-13,0xf2bd55);
- makeHouse(city,24,17,0xb56ce0);
+  for(const [area,cx,cz] of areas){
 
- cyl(5,.7,mats.stone,8,.35,13,20);
- cyl(3.7,.2,mats.water,8,.8,13,20);
+    for(let i=0;i<18;i++){
 
- makeNPC(-3,0,"MAYA",0xf06b91,"Quest Giver");
- makeNPC(14,4,"LEO",0x55a9df,"Shop");
- makeNPC(-19,18,"MAX",0x7cdb65,"Mini Games");
+      const a=(i/18)*Math.PI*2;
+      const r=6+(i%4)*2;
 
- for(let i=0;i<10;i++){
-  const a=i*Math.PI*2/10;
-  makeCoin(Math.cos(a)*18,.8,Math.sin(a)*18);
- }
-
- /* Green Valley */
- const valley=group("valley");
- box(65,.5,70,mats.grass2,45,-.25,0);
- for(let i=0;i<14;i++){
-  const x=25+Math.random()*40,z=-30+Math.random()*60;
-  makeTree(valley,x,z,.8+Math.random()*.5);
- }
- box(42,.15,7,mats.water,46,.15,0);
- box(7,.5,12,mats.wood,46,.5,0);
- for(let i=0;i<8;i++) makeCoin(27+i*5,.9,-12+(i%2)*7,"Green Valley");
-
- /* Crystal Cave */
- const cave=group("cave");
- box(48,.5,45,mat(0x493d6d),-38,-.25,48);
- for(let i=0;i<18;i++){
-  const x=-58+Math.random()*40,z=30+Math.random()*35;
-  const cr=new THREE.Mesh(new THREE.ConeGeometry(.5+Math.random()*.6,2+Math.random()*2,6),mats.crystal);
-  cr.position.set(x,1,z);cr.rotation.z=(Math.random()-.5)*.3;cave.add(cr);
- }
- for(let i=0;i<7;i++)makeCoin(-55+i*5,1,39+(i%2)*8,"Crystal Cave");
-
- /* Sky Island */
- const sky=group("sky");
- const island=new THREE.Mesh(new THREE.CylinderGeometry(22,14,3,8),mats.grass2);
- island.position.set(0,16,62);sky.add(island);
- for(let i=0;i<8;i++)makeCoin(-14+i*4,17,57+(i%2)*7,"Sky Island");
- for(let i=0;i<6;i++){
-  const p=box(4,.7,4,mats.stone,-15+i*6,17+i%2,48+i*4);
-  p.userData.obstacle=true;
- }
-
- /* Fun Park */
- const park=group("park");
- box(52,.5,40,mat(0x9562d0),55,-.25,48);
- for(let i=0;i<6;i++){
-  const ob=box(3,2,3,mat(0xff6b65),43+i*6,1,47);
-  obstacles.push(ob);
- }
- for(let i=0;i<8;i++)makeCoin(40+i*5,1,58,"Fun Park");
-
- makePortal(31,2,4,"GREEN VALLEY","Green Valley",0x39d76c);
- makePortal(-27,2,25,"CRYSTAL CAVE","Crystal Cave",0x8e5cff);
- makePortal(20,2,25,"FUN PARK","Fun Park",0xff5bc8);
- makePortal(0,18,65,"SPAWN CITY","Spawn City",0x3bcfff);
- makePortal(45,18,0,"SKY ISLAND","Sky Island",0xffd43b);
-
- makeSecretArea();
- updateAreaVisibility();
+      addCoin(
+        cx+Math.cos(a)*r,
+        area==="sky"?18.5:1,
+        cz+Math.sin(a)*r,
+        10,
+        area
+      );
+    }
+  }
 }
 
-function makeSecretArea(){
- const g=group("secret");
- const switchObj=box(1.5,1.5,1.5,mats.gold,-7,1,29);
- switchObj.userData.secretSwitch=true;
- switchObj.rotation.y=.5;
+/* =========================================================
+   PORTALS
+========================================================= */
 
- const portal=makePortal(-2,2,33,"HIDDEN CAVE","Hidden Cave",0xffd43b);
- portal.visible=false;
- portal.userData.secretPortal=true;
+const AREA_DATA={
+  spawn:{
+    name:"Spawn City",
+    x:0,z:0,
+    color:0x5aa9ff
+  },
+  valley:{
+    name:"Green Valley",
+    x:-45,z:-5,
+    color:0x51e58a
+  },
+  cave:{
+    name:"Crystal Cave",
+    x:45,z:18,
+    color:0x9f71ff
+  },
+  sky:{
+    name:"Sky Island",
+    x:0,z:62,
+    color:0x53dfff
+  },
+  park:{
+    name:"Fun Park",
+    x:45,z:-48,
+    color:0xff65bd
+  }
+};
+
+function addPortal(area,x,z){
+
+  const data=AREA_DATA[area];
+
+  const g=new THREE.Group();
+
+  const outer=new THREE.Mesh(
+    new THREE.TorusGeometry(2.1,.25,10,32),
+    mat(data.color,{emissive:data.color})
+  );
+
+  outer.rotation.x=Math.PI/2;
+
+  const core=new THREE.Mesh(
+    new THREE.CircleGeometry(1.75,32),
+    new THREE.MeshBasicMaterial({
+      color:data.color,
+      transparent:true,
+      opacity:.22,
+      side:THREE.DoubleSide
+    })
+  );
+
+  core.rotation.x=Math.PI/2;
+
+  g.add(outer,core);
+  g.position.set(x,2,z);
+
+  dynamicWorld.add(g);
+
+  portals.push({
+    group:g,
+    area,
+    x,
+    z
+  });
 }
 
-function updateAreaVisibility(){
- /* all areas remain visible for a seamless sandbox world */
+/* =========================================================
+   NPC
+========================================================= */
+
+function addNPC(name,x,z,color,role){
+
+  const g=new THREE.Group();
+
+  const body=new THREE.Mesh(
+    new THREE.BoxGeometry(1.3,1.8,1),
+    mat(color)
+  );
+
+  body.position.y=1.7;
+
+  const head=new THREE.Mesh(
+    new THREE.BoxGeometry(1.25,1.25,1.25),
+    mat(0xf0c49a)
+  );
+
+  head.position.y=3.15;
+
+  g.add(body,head);
+
+  g.position.set(x,0,z);
+
+  g.userData={
+    name,
+    role
+  };
+
+  dynamicWorld.add(g);
+
+  npcs.push({
+    group:g,
+    name,
+    role,
+    baseY:0
+  });
+}
+
+/* =========================================================
+   WORLD CREATION
+========================================================= */
+
+function createWorld(){
+
+  clearWorld();
+
+  addGround();
+
+  /* Spawn */
+  addRoad(0,0,130,8);
+  addRoad(0,0,8,130);
+
+  addHouse(-12,-12,0xe9edf3);
+  addHouse(12,-12,0xffe0b2);
+  addHouse(-12,12,0xd7eaff);
+  addHouse(12,12,0xffd5dc);
+
+  /* Valley */
+  for(let i=0;i<20;i++){
+    addTree(
+      -70+Math.random()*48,
+      -30+Math.random()*50,
+      .8+Math.random()*.5
+    );
+  }
+
+  for(let i=0;i<5;i++){
+    addMountain(
+      -70+Math.random()*35,
+      -50+Math.random()*90,
+      7+Math.random()*5,
+      12+Math.random()*10
+    );
+  }
+
+  /* Cave entrance */
+  for(let i=0;i<8;i++){
+    addMountain(
+      45+(i%4)*4,
+      18+Math.floor(i/4)*7,
+      4,
+      9
+    );
+  }
+
+  box(
+    16,2,12,
+    0x26314a,
+    45,1,18
+  );
+
+  /* Fun Park */
+  addRoad(45,-48,45,5);
+
+  for(let i=0;i<8;i++){
+    const angle=i*Math.PI/4;
+
+    const x=45+Math.cos(angle)*12;
+    const z=-48+Math.sin(angle)*12;
+
+    cylinder(.8,7,0x3d6be0,x,3.5,z);
+
+    const top=new THREE.Mesh(
+      new THREE.SphereGeometry(2.5,12,8),
+      mat(i%2?0xff66b8:0xffdf58)
+    );
+
+    top.position.set(x,7.2,z);
+    top.castShadow=true;
+    world.add(top);
+  }
+
+  /* Sky Island */
+  const island=new THREE.Mesh(
+    new THREE.CylinderGeometry(22,16,3,8),
+    mat(0x68b7ff)
+  );
+
+  island.position.set(0,17,62);
+  island.castShadow=true;
+  island.receiveShadow=true;
+
+  world.add(island);
+
+  for(let i=0;i<12;i++){
+
+    const a=i*Math.PI*2/12;
+
+    addTree(
+      Math.cos(a)*12,
+      62+Math.sin(a)*12,
+      .65
+    );
+
+    // adjust tree height naturally from ground; visual island trees
+  }
+
+  /* portals: each is placed at its actual destination area */
+  addPortal("spawn",0,8);
+  addPortal("valley",-45,8);
+  addPortal("cave",45,8);
+  addPortal("sky",0,48);
+  addPortal("park",45,-35);
+
+  /* NPCs */
+  addNPC("Maya",5,5,0xff6b9c,"Guide");
+  addNPC("Rafi",-8,5,0x54c7ff,"Builder");
+  addNPC("Luna",40,-43,0xa979ff,"Fun Park");
+
+  createCoins();
+
+  createTreasureSwitch();
+
+  updateArea("spawn");
+}
+
+/* =========================================================
+   SECRET
+========================================================= */
+
+let treasureSwitch;
+
+function createTreasureSwitch(){
+
+  treasureSwitch=new THREE.Group();
+
+  const base=new THREE.Mesh(
+    new THREE.BoxGeometry(1.6,.4,1.6),
+    mat(0x343d4f)
+  );
+
+  const button=new THREE.Mesh(
+    new THREE.BoxGeometry(.6,.7,.6),
+    mat(0xff4e70,{emissive:0xff204f})
+  );
+
+  base.position.y=.2;
+  button.position.y=.75;
+
+  treasureSwitch.add(base,button);
+  treasureSwitch.position.set(-20,.0,25);
+
+  dynamicWorld.add(treasureSwitch);
 }
 
 /* =========================================================
    PLAYER
 ========================================================= */
+
 function createPlayer(){
- if(player)scene.remove(player);
- player=new THREE.Group();
 
- const skin=mat(state.customization.skin);
- const outfit=mat(state.customization.outfit);
- const dark=mat(0x20283a);
-
- const body=new THREE.Mesh(new THREE.BoxGeometry(1.35,1.6,.8),outfit);
- body.position.y=1.65;player.add(body);playerParts.body=body;
-
- const head=new THREE.Mesh(new THREE.BoxGeometry(1.35,1.35,1.25),skin);
- head.position.y=3.1;player.add(head);playerParts.head=head;
-
- const eyeMat=new THREE.MeshBasicMaterial({color:0x172033});
- [-.27,.27].forEach(x=>{
-  const eye=new THREE.Mesh(new THREE.BoxGeometry(.16,.18,.05),eyeMat);
-  eye.position.set(x,3.15,-.64);player.add(eye);
- });
-
- const armL=new THREE.Mesh(new THREE.BoxGeometry(.42,1.5,.55),outfit);
- armL.position.set(-.9,1.7,0);player.add(armL);playerParts.armL=armL;
-
- const armR=armL.clone();armR.position.x=.9;player.add(armR);playerParts.armR=armR;
-
- const legL=new THREE.Mesh(new THREE.BoxGeometry(.5,1.45,.6),dark);
- legL.position.set(-.38,.55,0);player.add(legL);playerParts.legL=legL;
-
- const legR=legL.clone();legR.position.x=.38;player.add(legR);playerParts.legR=legR;
-
- if(state.customization.hair!=="none"){
-  const hair=state.customization.hair==="spiky"?new THREE.Mesh(
-   new THREE.ConeGeometry(.8,.8,6),mat(0x33251f)
-  ):new THREE.Mesh(new THREE.BoxGeometry(1.45,.4,1.3),mat(0x33251f));
-  hair.position.y=3.85;player.add(hair);playerParts.hair=hair;
- }
-
- if(state.customization.accessory==="gold"){
-  const hat=new THREE.Mesh(new THREE.TorusGeometry(.65,.14,8,16),mats.gold);
-  hat.rotation.x=Math.PI/2;hat.position.y=4.25;player.add(hat);playerParts.hat=hat;
- }
-
- player.position.set(state.checkpoint.x,state.checkpoint.y,state.checkpoint.z);
- player.traverse(o=>{if(o.isMesh)o.castShadow=quality!=="LOW"});
- scene.add(player);
-}
-
-/* =========================================================
-   INPUT
-========================================================= */
-const keys={};
-let joy={x:0,y:0};
-let cameraDragging=false,lastTouchX=0,lastTouchY=0;
-
-addEventListener("keydown",e=>{
- keys[e.code]=true;
- if(e.code==="Space"){jumpQueued=true;e.preventDefault()}
- if(e.code==="ShiftLeft"||e.code==="ShiftRight")sprinting=true;
- if(e.code==="Escape"&&gameStarted)togglePause();
-});
-addEventListener("keyup",e=>{
- keys[e.code]=false;
- if(e.code==="ShiftLeft"||e.code==="ShiftRight")sprinting=false;
-});
-
-renderer.domElement.addEventListener("pointerdown",e=>{
- if(e.pointerType==="mouse"){
-  cameraDragging=true;lastTouchX=e.clientX;lastTouchY=e.clientY;
- }
-});
-addEventListener("pointerup",()=>cameraDragging=false);
-addEventListener("pointermove",e=>{
- if(cameraDragging&&gameStarted&&!paused){
-  const dx=e.clientX-lastTouchX,dy=e.clientY-lastTouchY;
-  yaw-=dx*.006*state.settings.sensitivity;
-  pitch-=dy*.004*state.settings.sensitivity;
-  pitch=Math.max(.08,Math.min(1.05,pitch));
-  lastTouchX=e.clientX;lastTouchY=e.clientY;
- }
-});
-
-/* right-side touch camera */
-let camTouch=false;
-addEventListener("touchstart",e=>{
- for(const t of e.changedTouches){
-  if(t.clientX>innerWidth*.43){
-   camTouch=true;lastTouchX=t.clientX;lastTouchY=t.clientY;
+  if(player){
+    scene.remove(player);
   }
- }
-},{passive:false});
-addEventListener("touchmove",e=>{
- if(!camTouch)return;
- for(const t of e.changedTouches){
-  if(t.clientX>innerWidth*.43){
-   const dx=t.clientX-lastTouchX,dy=t.clientY-lastTouchY;
-   yaw-=dx*.008*state.settings.sensitivity;
-   pitch-=dy*.005*state.settings.sensitivity;
-   pitch=Math.max(.08,Math.min(1.05,pitch));
-   lastTouchX=t.clientX;lastTouchY=t.clientY;
-  }
- }
-},{passive:false});
-addEventListener("touchend",()=>camTouch=false);
 
-/* joystick */
-const joystick=document.getElementById("joystick");
-const stick=document.getElementById("stick");
-let joyActive=false;
-function updateJoy(x,y){
- const r=45,dx=x-61,dy=y-61;
- const len=Math.hypot(dx,dy),m=Math.min(r,len);
- const nx=len?dx/len:0,ny=len?dy/len:0;
- joy.x=nx*m/r;joy.y=ny*m/r;
- stick.style.transform=`translate(${nx*m}px,${ny*m}px)`;
-}
-joystick.addEventListener("pointerdown",e=>{
- joyActive=true;joystick.setPointerCapture(e.pointerId);
- const r=joystick.getBoundingClientRect();
- updateJoy(e.clientX-r.left,e.clientY-r.top);
-});
-joystick.addEventListener("pointermove",e=>{
- if(!joyActive)return;
- const r=joystick.getBoundingClientRect();
- updateJoy(e.clientX-r.left,e.clientY-r.top);
-});
-joystick.addEventListener("pointerup",()=>{
- joyActive=false;joy.x=joy.y=0;stick.style.transform="";
-});
-joystick.addEventListener("pointercancel",()=>{
- joyActive=false;joy.x=joy.y=0;stick.style.transform="";
-});
+  player=new THREE.Group();
+  playerVisual=new THREE.Group();
 
-function holdButton(id,onDown,onUp){
- const b=document.getElementById(id);
- b.addEventListener("pointerdown",e=>{e.preventDefault();b.classList.add("active");onDown()});
- ["pointerup","pointercancel","pointerleave"].forEach(ev=>b.addEventListener(ev,()=>{b.classList.remove("active");onUp&&onUp()}));
-}
-holdButton("jumpBtn",()=>jumpQueued=true);
-holdButton("sprintBtn",()=>sprinting=true,()=>sprinting=false);
-document.getElementById("actionBtn").addEventListener("pointerdown",e=>{e.preventDefault();doAction()});
+  player.add(playerVisual);
 
-/* =========================================================
-   AUDIO
-========================================================= */
-function audio(){
- if(!audioCtx)audioCtx=new (window.AudioContext||window.webkitAudioContext)();
- if(audioCtx.state==="suspended")audioCtx.resume();
-}
-function beep(freq=500,duration=.08,type="sine",gain=.05){
- if(!state.settings.sfx)return;
- try{
-  audio();
-  const o=audioCtx.createOscillator(),g=audioCtx.createGain();
-  o.type=type;o.frequency.value=freq;
-  g.gain.setValueAtTime(state.settings.volume*gain,audioCtx.currentTime);
-  g.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+duration);
-  o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+duration);
- }catch(e){}
-}
-function coinSound(){beep(900,.07,"triangle",.08);setTimeout(()=>beep(1250,.1,"triangle",.06),50)}
-function jumpSound(){beep(440,.1,"square",.04)}
-function rewardSound(){beep(500,.1);setTimeout(()=>beep(800,.12),100);setTimeout(()=>beep(1100,.15),200)}
-function portalSound(){beep(250,.15,"sawtooth",.04);setTimeout(()=>beep(600,.2,"sine",.04),120)}
+  const c=state.customization;
 
-/* =========================================================
-   SAVE
-========================================================= */
-function cloneDefault(){
- return JSON.parse(JSON.stringify(defaultState));
-}
-function merge(a,b){
- for(const k in b){
-  if(b[k]&&typeof b[k]==="object"&&!Array.isArray(b[k])){
-   a[k]=merge(a[k]||{},b[k]);
-  }else a[k]=b[k];
- }
- return a;
-}
-function loadState(){
- try{
-  const raw=localStorage.getItem(CFG.key);
-  return raw?merge(cloneDefault(),JSON.parse(raw)):cloneDefault();
- }catch(e){return cloneDefault()}
-}
-function save(){
- try{localStorage.setItem(CFG.key,JSON.stringify(state));toast("Progress tersimpan ✓")}catch(e){toast("Save gagal")}
-}
-function resetData(){
- if(confirm("Reset seluruh progress BLOCKVERSE? Data lokal akan dihapus.")){
-  localStorage.removeItem(CFG.key);location.reload();
- }
-}
-setInterval(()=>{if(gameStarted)saveSilent()},15000);
-function saveSilent(){try{localStorage.setItem(CFG.key,JSON.stringify(state))}catch(e){}}
+  const skinColors={
+    blue:0x4da3ff,
+    red:0xff5b61,
+    green:0x48d597,
+    purple:0xa974ff,
+    yellow:0xffd64d
+  };
 
-/* =========================================================
-   PROGRESSION
-========================================================= */
-function xpNeeded(){return 100+(state.level-1)*75}
-function addXP(amount){
- state.xp+=amount;
- while(state.xp>=xpNeeded()){
-  state.xp-=xpNeeded();state.level++;
-  rewardSound();toast("LEVEL UP! LEVEL "+state.level);
-  achievement("level");
- }
- updateHUD();
- saveSilent();
-}
-function addCoins(amount){
- state.coins=Math.max(0,state.coins+amount);
- updateHUD();saveSilent();
-}
-function achievement(id){
- if(state.achievements[id])return;
- state.achievements[id]=true;
- const names={
-  first:"FIRST STEPS",
-  coins:"COIN COLLECTOR",
-  explorer:"EXPLORER",
-  treasure:"TREASURE HUNTER",
-  sky:"SKY JUMPER",
-  level:"LEVEL UP"
- };
- toast("🏆 "+names[id]+" unlocked!");
- rewardSound();saveSilent();
-}
+  const outfitColors={
+    classic:0x347cff,
+    explorer:0x7b5438,
+    ninja:0x252b3a,
+    royal:0x873bba,
+    sports:0xff5b58
+  };
 
-/* =========================================================
-   DAILY
-========================================================= */
-function dailyReward(){
- const today=new Date().toLocaleDateString("en-CA");
- if(state.daily.date===today)return;
- const yesterday=new Date(Date.now()-86400000).toLocaleDateString("en-CA");
- if(state.daily.date===yesterday)state.daily.day++;
- else state.daily.day=1;
- state.daily.date=today;
- const reward=25+state.daily.day*25;
- state.coins+=reward;
- toast("DAILY REWARD +"+reward+" COINS");
- rewardSound();
- saveSilent();
-}
-
-/* =========================================================
-   COIN COLLECTION
-========================================================= */
-function collectCoins(){
- if(!player)return;
- for(const c of coins3D){
-  if(c.mesh.userData.collected)continue;
-  if(c.area!==currentArea && currentArea!=="Spawn City")continue;
-  if(player.position.distanceTo(c.mesh.position)<1.7){
-   c.mesh.userData.collected=true;
-   c.mesh.visible=false;
-   addCoins(c.value);
-   addXP(10);
-   coinSound();
-   burst(c.mesh.position,0xffd43b,8);
-   floatText("+10",c.mesh.position);
-   if(state.coins>=10)achievement("first");
-   if(countCollected()>=10){
-    achievement("coins");
-    if(!state.quests.coins){
-     state.quests.coins=true;addXP(100);addCoins(50);
-     toast("QUEST COMPLETE: COLLECT 10 COINS");
-    }
-   }
-  }
- }
-}
-function countCollected(){
- return coins3D.filter(c=>c.mesh.userData.collected).length;
-}
-
-/* =========================================================
-   MOVEMENT / COLLISION
-========================================================= */
-function getMoveInput(){
- let x=joy.x,y=joy.y;
- if(keys.KeyA)x-=1;if(keys.KeyD)x+=1;
- if(keys.KeyW)y-=1;if(keys.KeyS)y+=1;
- const v=new THREE.Vector2(x,y);
- if(v.length()>1)v.normalize();
- return v;
-}
-function terrainHeight(x,z){
- if(x>25&&x<80&&z>-35&&z<35)return .25;
- if(x<-15&&x<5&&z>25&&z<75)return .25;
- if(x>35&&x<80&&z>30&&z<70)return .25;
- if(Math.abs(x)<25&&z>42&&z<85)return 16;
- return .25;
-}
-function updatePlayer(dt){
- if(!player)return;
-
- const input=getMoveInput();
- const moving=input.length()>.05;
-
- if(moving){
-  const forward=new THREE.Vector3(Math.sin(yaw),0,Math.cos(yaw));
-  const right=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw));
-  const dir=new THREE.Vector3()
-   .addScaledVector(right,input.x)
-   .addScaledVector(forward,-input.y)
-   .normalize();
-
-  const speed=sprinting?CFG.sprintSpeed:CFG.walkSpeed;
-  const target=dir.multiplyScalar(speed);
-  velocity.x=THREE.MathUtils.lerp(velocity.x,target.x,Math.min(1,dt*9));
-  velocity.z=THREE.MathUtils.lerp(velocity.z,target.z,Math.min(1,dt*9));
-
-  player.rotation.y=THREE.MathUtils.lerp(
-   player.rotation.y,Math.atan2(dir.x,dir.z),Math.min(1,dt*10)
+  const body=new THREE.Mesh(
+    new THREE.BoxGeometry(1.2,1.6,.8),
+    mat(outfitColors[c.outfit]||outfitColors.classic)
   );
- }else{
-  velocity.x=THREE.MathUtils.lerp(velocity.x,0,Math.min(1,dt*10));
-  velocity.z=THREE.MathUtils.lerp(velocity.z,0,Math.min(1,dt*10));
- }
 
- if(jumpQueued&&grounded){
-  velocity.y=CFG.jumpForce;jumpQueued=false;grounded=false;jumpSound();
-  burst(player.position.clone().add(new THREE.Vector3(0,.1,0)),0xffffff,5);
- }else jumpQueued=false;
+  body.position.y=1.65;
 
- velocity.y-=CFG.gravity*dt;
- player.position.x+=velocity.x*dt;
- player.position.y+=velocity.y*dt;
- player.position.z+=velocity.z*dt;
+  const head=new THREE.Mesh(
+    new THREE.BoxGeometry(1.25,1.25,1.25),
+    mat(skinColors[c.skin]||skinColors.blue)
+  );
 
- const floor=terrainHeight(player.position.x,player.position.z)+.05;
- if(player.position.y<=floor){
-  if(velocity.y<-5)burst(player.position.clone(),0xffffff,4);
-  player.position.y=floor;velocity.y=0;grounded=true;
- }else grounded=false;
+  head.position.y=3.05;
 
- player.position.x=THREE.MathUtils.clamp(player.position.x,-78,78);
- player.position.z=THREE.MathUtils.clamp(player.position.z,-78,88);
+  const leg1=new THREE.Mesh(
+    new THREE.BoxGeometry(.48,1.2,.55),
+    mat(0x26344e)
+  );
 
- animatePlayer(dt,moving);
+  const leg2=leg1.clone();
 
- if(player.position.y< -3)respawn();
- obstacleCollision();
+  leg1.position.set(-.32,.6,0);
+  leg2.position.set(.32,.6,0);
+
+  const arm1=new THREE.Mesh(
+    new THREE.BoxGeometry(.45,1.35,.55),
+    mat(outfitColors[c.outfit]||outfitColors.classic)
+  );
+
+  const arm2=arm1.clone();
+
+  arm1.position.set(-.85,1.7,0);
+  arm2.position.set(.85,1.7,0);
+
+  playerVisual.add(
+    body,
+    head,
+    leg1,
+    leg2,
+    arm1,
+    arm2
+  );
+
+  /* face */
+  if(c.face==="cool"){
+
+    const glasses=new THREE.Mesh(
+      new THREE.BoxGeometry(1.1,.23,.12),
+      mat(0x151923)
+    );
+
+    glasses.position.set(0,3.1,-.64);
+
+    playerVisual.add(glasses);
+
+  }else if(c.face==="star"){
+
+    const star=new THREE.Mesh(
+      new THREE.OctahedronGeometry(.18),
+      mat(0xffdf3e,{emissive:0xffc400})
+    );
+
+    star.position.set(0,3.65,-.67);
+
+    playerVisual.add(star);
+  }
+
+  /* hair */
+  if(c.hair==="spiky"){
+
+    for(let i=-1;i<=1;i++){
+
+      const h=new THREE.Mesh(
+        new THREE.ConeGeometry(.18,.7,5),
+        mat(0x3b241c)
+      );
+
+      h.position.set(i*.28,3.8,0);
+      playerVisual.add(h);
+    }
+
+  }else if(c.hair==="cap"){
+
+    const cap=new THREE.Mesh(
+      new THREE.BoxGeometry(1.35,.35,1.35),
+      mat(0x1e2b52)
+    );
+
+    cap.position.y=3.75;
+
+    playerVisual.add(cap);
+  }
+
+  /* accessory */
+  if(c.accessory==="halo"){
+
+    const halo=new THREE.Mesh(
+      new THREE.TorusGeometry(.8,.09,8,24),
+      mat(0xffdf55,{emissive:0xffb800})
+    );
+
+    halo.rotation.x=Math.PI/2;
+    halo.position.y=4;
+
+    playerVisual.add(halo);
+  }
+
+  if(c.accessory==="backpack"){
+
+    const pack=new THREE.Mesh(
+      new THREE.BoxGeometry(.75,1,.3),
+      mat(0x243247)
+    );
+
+    pack.position.set(0,1.8,.55);
+
+    playerVisual.add(pack);
+  }
+
+  if(c.effect==="rainbow"){
+
+    const ring=new THREE.Mesh(
+      new THREE.TorusGeometry(1.15,.07,8,32),
+      new THREE.MeshBasicMaterial({
+        color:0xffffff
+      })
+    );
+
+    ring.rotation.x=Math.PI/2;
+    ring.position.y=2;
+
+    playerVisual.add(ring);
+
+    player.userData.rainbow=ring;
+  }
+
+  player.position.set(
+    state.position.x,
+    state.position.y,
+    state.position.z
+  );
+
+  scene.add(player);
+}
+
+/* =========================================================
+   AREA / TERRAIN
+========================================================= */
+
+function getAreaAt(x,z){
+
+  const areas=[
+    ["valley",-45,-5,35],
+    ["cave",45,18,30],
+    ["park",45,-48,30],
+    ["sky",0,62,23]
+  ];
+
+  for(const [id,cx,cz,r] of areas){
+
+    const dx=x-cx;
+    const dz=z-cz;
+
+    if(dx*dx+dz*dz<r*r){
+      return id;
+    }
+  }
+
+  return "spawn";
+}
+
+function terrainHeight(x,z){
+
+  /* Sky island only within actual island radius */
+  const dx=x;
+  const dz=z-62;
+
+  if(dx*dx+dz*dz<=20*20){
+    return 18.5;
+  }
+
+  return 0;
+}
+
+function updateArea(force=null){
+
+  const id=force||getAreaAt(player.position.x,player.position.z);
+
+  if(id!==currentArea){
+
+    currentArea=id;
+    toast("📍 "+AREA_DATA[id].name);
+  }
+
+  $("areaName").textContent=AREA_DATA[currentArea].name;
+}
+
+/* =========================================================
+   COLLISION
+========================================================= */
+
+function collidesAt(x,z){
+
+  /* world bounds */
+  const limit=CONFIG.worldSize/2-2;
+
+  if(x<-limit || x>limit || z<-limit || z>limit){
+    return true;
+  }
+
+  /* houses / trees */
+  for(const o of obstacles){
+
+    const dx=x-o.x;
+    const dz=z-o.z;
+
+    if(dx*dx+dz*dz < (o.radius+.65)**2){
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/* =========================================================
+   MOVEMENT
+========================================================= */
+
+function getMove(){
+
+  let x=0;
+  let y=0;
+
+  if(keys.KeyW || keys.ArrowUp) y+=1;
+  if(keys.KeyS || keys.ArrowDown) y-=1;
+  if(keys.KeyA || keys.ArrowLeft) x-=1;
+  if(keys.KeyD || keys.ArrowRight) x+=1;
+
+  x+=moveInput.x;
+  y+=moveInput.y;
+
+  const len=Math.hypot(x,y);
+
+  if(len>1){
+    x/=len;
+    y/=len;
+  }
+
+  return {x,y};
+}
+
+function updateMovement(dt){
+
+  if(!player || paused || !gameStarted) return;
+
+  const move=getMove();
+
+  const speed=
+    sprinting||keys.ShiftLeft||keys.ShiftRight
+    ?CONFIG.sprintSpeed
+    :CONFIG.walkSpeed;
+
+  const sin=Math.sin(camYaw);
+  const cos=Math.cos(camYaw);
+
+  const dx=
+    (move.x*cos + move.y*sin)*speed*dt;
+
+  const dz=
+    (move.y*cos - move.x*sin)*speed*dt;
+
+  const nx=player.position.x+dx;
+  const nz=player.position.z+dz;
+
+  if(!collidesAt(nx,player.position.z)){
+    player.position.x=nx;
+  }
+
+  if(!collidesAt(player.position.x,nz)){
+    player.position.z=nz;
+  }
+
+  const ground=terrainHeight(
+    player.position.x,
+    player.position.z
+  );
+
+  if(player.position.y<=ground+.05 && velocityY<=0){
+
+    player.position.y=ground;
+    velocityY=0;
+    onGround=true;
+
+  }else{
+
+    onGround=false;
+    velocityY-=CONFIG.gravity*dt;
+    player.position.y+=velocityY*dt;
+  }
+
+  /* Fall recovery */
+  if(player.position.y<-12){
+
+    respawn();
+  }
+
+  animatePlayer(dt,move);
+}
+
+function jump(){
+
+  if(!gameStarted || paused) return;
+
+  if(onGround){
+
+    velocityY=CONFIG.jumpForce;
+    onGround=false;
+  }
+}
+
+function respawn(){
+
+  player.position.set(
+    state.checkpoint.x,
+    state.checkpoint.y,
+    state.checkpoint.z
+  );
+
+  velocityY=0;
+
+  toast("↩ Kembali ke checkpoint");
 }
 
 /* =========================================================
    PLAYER ANIMATION
 ========================================================= */
-let animT=0;
-function animatePlayer(dt,moving){
- animT+=dt*(sprinting?13:8);
- const swing=moving?Math.sin(animT)*.65:0;
- playerParts.armL.rotation.x=swing;
- playerParts.armR.rotation.x=-swing;
- playerParts.legL.rotation.x=-swing;
- playerParts.legR.rotation.x=swing;
- playerParts.body.position.y=1.65+(moving?Math.abs(Math.sin(animT*2))*.04:0);
- if(!grounded){
-  playerParts.armL.rotation.x=-.35;
-  playerParts.armR.rotation.x=-.35;
- }
-}
-function obstacleCollision(){
- for(const o of obstacles){
-  if(!o.visible)continue;
-  const p=o.position;
-  if(Math.abs(player.position.x-p.x)<2.1&&Math.abs(player.position.z-p.z)<2.1&&player.position.y<3){
-   state.checkpoint={...obstacleCheckpoint};
-   respawn();
-   toast("Obstacle! Kembali ke checkpoint");
-   beep(150,.15,"sawtooth",.05);
-   break;
+
+function animatePlayer(dt,move){
+
+  if(!playerVisual) return;
+
+  const moving=Math.hypot(move.x,move.y)>.1;
+
+  playerVisual.rotation.y+=
+    moving
+    ?((move.x*.2)*dt)
+    :0;
+
+  const t=performance.now()*.012;
+
+  const swing=moving
+    ?Math.sin(t*1.5)*.35
+    :0;
+
+  const legs=playerVisual.children;
+
+  if(legs[2]) legs[2].rotation.x=swing;
+  if(legs[3]) legs[3].rotation.x=-swing;
+
+  if(player.userData.rainbow){
+
+    player.userData.rainbow.rotation.z+=dt*2;
+
+    const hue=(performance.now()*.0002)%1;
+
+    player.userData.rainbow.material.color.setHSL(
+      hue,.9,.6
+    );
   }
- }
-}
-function respawn(){
- player.position.set(state.checkpoint.x,state.checkpoint.y,state.checkpoint.z);
- velocity.set(0,0,0);
 }
 
 /* =========================================================
    CAMERA
 ========================================================= */
+
 function updateCamera(dt){
- if(!player)return;
- const distance=9;
- const h=Math.cos(pitch)*distance;
- const target=new THREE.Vector3(
-  player.position.x+Math.sin(yaw)*h,
-  player.position.y+3.5+Math.sin(pitch)*distance,
-  player.position.z+Math.cos(yaw)*h
- );
- camera.position.lerp(target,1-Math.pow(.001,dt));
- cameraTarget.set(player.position.x,player.position.y+1.8,player.position.z);
- camera.lookAt(cameraTarget);
+
+  if(!player) return;
+
+  const target=new THREE.Vector3(
+    player.position.x,
+    player.position.y+2,
+    player.position.z
+  );
+
+  const x=
+    target.x-
+    Math.sin(camYaw)*
+    Math.cos(camPitch)*
+    camDistance;
+
+  const y=
+    target.y+
+    Math.sin(camPitch)*
+    camDistance;
+
+  const z=
+    target.z-
+    Math.cos(camYaw)*
+    Math.cos(camPitch)*
+    camDistance;
+
+  camera.position.lerp(
+    new THREE.Vector3(x,y,z),
+    1-Math.pow(.001,dt)
+  );
+
+  camera.lookAt(target);
 }
+
+/* =========================================================
+   CAMERA POINTER
+========================================================= */
+
+let cameraPointerId=null;
+let lastPointerX=0;
+let lastPointerY=0;
+
+const cameraZone=$("cameraZone");
+
+cameraZone.addEventListener("pointerdown",e=>{
+
+  if(!gameStarted || paused) return;
+
+  cameraPointerId=e.pointerId;
+  lastPointerX=e.clientX;
+  lastPointerY=e.clientY;
+
+  cameraZone.setPointerCapture(e.pointerId);
+});
+
+cameraZone.addEventListener("pointermove",e=>{
+
+  if(e.pointerId!==cameraPointerId) return;
+
+  const dx=e.clientX-lastPointerX;
+  const dy=e.clientY-lastPointerY;
+
+  lastPointerX=e.clientX;
+  lastPointerY=e.clientY;
+
+  camYaw-=dx*.008;
+  camPitch+=dy*.006;
+
+  camPitch=THREE.MathUtils.clamp(
+    camPitch,
+    -.05,
+    1.25
+  );
+});
+
+cameraZone.addEventListener("pointerup",e=>{
+  if(e.pointerId===cameraPointerId){
+    cameraPointerId=null;
+  }
+});
+
+cameraZone.addEventListener("pointercancel",e=>{
+  if(e.pointerId===cameraPointerId){
+    cameraPointerId=null;
+  }
+});
+
+/* Desktop mouse */
+let mouseDown=false;
+
+renderer.domElement.addEventListener("mousedown",e=>{
+  if(e.button===0) mouseDown=true;
+});
+
+window.addEventListener("mouseup",()=>{
+  mouseDown=false;
+});
+
+window.addEventListener("mousemove",e=>{
+
+  if(!mouseDown || !gameStarted || paused) return;
+
+  camYaw-=e.movementX*.006;
+  camPitch+=e.movementY*.004;
+
+  camPitch=THREE.MathUtils.clamp(
+    camPitch,-.05,1.25
+  );
+});
+
+/* =========================================================
+   JOYSTICK
+========================================================= */
+
+const joystick=$("joystick");
+const stick=$("stick");
+
+let joystickPointer=null;
+
+joystick.addEventListener("pointerdown",e=>{
+
+  joystickPointer=e.pointerId;
+
+  joystick.setPointerCapture(e.pointerId);
+
+  updateJoystick(e);
+});
+
+joystick.addEventListener("pointermove",e=>{
+
+  if(e.pointerId===joystickPointer){
+    updateJoystick(e);
+  }
+});
+
+function updateJoystick(e){
+
+  const r=joystick.getBoundingClientRect();
+
+  const cx=r.left+r.width/2;
+  const cy=r.top+r.height/2;
+
+  let dx=e.clientX-cx;
+  let dy=e.clientY-cy;
+
+  const max=42;
+
+  const len=Math.hypot(dx,dy);
+
+  if(len>max){
+
+    dx=dx/len*max;
+    dy=dy/len*max;
+  }
+
+  stick.style.left=`calc(50% + ${dx}px)`;
+  stick.style.top=`calc(50% + ${dy}px)`;
+
+  moveInput.x=dx/max;
+  moveInput.y=-dy/max;
+}
+
+function resetJoystick(){
+
+  joystickPointer=null;
+
+  stick.style.left="50%";
+  stick.style.top="50%";
+
+  moveInput.x=0;
+  moveInput.y=0;
+}
+
+joystick.addEventListener("pointerup",resetJoystick);
+joystick.addEventListener("pointercancel",resetJoystick);
+
+/* =========================================================
+   MOBILE BUTTONS
+========================================================= */
+
+function bindHoldButton(el,down,up=()=>{}){
+
+  el.addEventListener("pointerdown",e=>{
+    e.preventDefault();
+    down();
+  });
+
+  el.addEventListener("pointerup",e=>{
+    e.preventDefault();
+    up();
+  });
+
+  el.addEventListener("pointercancel",up);
+  el.addEventListener("pointerleave",up);
+}
+
+bindHoldButton(
+  $("sprintBtn"),
+  ()=>sprinting=true,
+  ()=>sprinting=false
+);
+
+$("jumpBtn").addEventListener("pointerdown",e=>{
+  e.preventDefault();
+  jump();
+});
+
+$("actionBtn").addEventListener("pointerdown",e=>{
+  e.preventDefault();
+  interact();
+});
+
+/* =========================================================
+   KEYBOARD
+========================================================= */
+
+window.addEventListener("keydown",e=>{
+
+  keys[e.code]=true;
+
+  if(e.code==="Space"){
+    e.preventDefault();
+    jump();
+  }
+
+  if(e.code==="Escape"){
+
+    if(dialog.classList.contains("hidden")===false){
+      closeDialog();
+    }else if(panelOverlay.classList.contains("hidden")===false){
+      closePanel();
+    }else{
+      togglePause();
+    }
+  }
+});
+
+window.addEventListener("keyup",e=>{
+  keys[e.code]=false;
+});
 
 /* =========================================================
    INTERACTION
 ========================================================= */
-function nearestInteraction(){
- if(!player)return null;
- let best=null,dist=3.5;
 
- for(const n of npcs){
-  const d=player.position.distanceTo(n.position);
-  if(d<dist){best={type:"npc",obj:n};dist=d}
- }
- for(const p of portals){
-  if(!p.visible)continue;
-  const d=player.position.distanceTo(p.position);
-  if(d<3.5){best={type:"portal",obj:p};dist=d}
- }
- const switchObj=scene.getObjectByProperty("userData",undefined);
- /* secret switch checked directly */
- scene.traverse(o=>{
-  if(o.userData?.secretSwitch){
-   const d=player.position.distanceTo(o.position);
-   if(d<3){best={type:"secret",obj:o};}
-  }
- });
- return best;
+function distanceXZ(a,b){
+
+  const dx=a.x-b.x;
+  const dz=a.z-b.z;
+
+  return Math.hypot(dx,dz);
 }
-function doAction(){
- if(!gameStarted||paused)return;
- const target=nearestInteraction();
- if(!target){toast("Tidak ada yang bisa dilakukan di dekatmu");return}
 
- if(target.type==="npc"){
-  const n=target.obj;
-  if(n.userData.role==="Quest Giver")openDialog(
-   n.userData.name,
-   "Hey Explorer! Bisa bantu mengumpulkan 10 coin?",
-   ()=>{toast("Quest aktif: Collect 10 Coins");state.quests.coins=false}
+function interact(){
+
+  if(!gameStarted || paused) return;
+
+  /* NPC */
+  for(const n of npcs){
+
+    if(
+      distanceXZ(
+        player.position,
+        n.group.position
+      )<3
+    ){
+
+      showDialog(
+        n.name,
+        npcText(n.role)
+      );
+
+      return;
+    }
+  }
+
+  /* portal */
+  for(const p of portals){
+
+    if(
+      distanceXZ(
+        player.position,
+        p.group.position
+      )<3
+    ){
+
+      teleportTo(p.area);
+
+      return;
+    }
+  }
+
+  /* treasure */
+  if(
+    treasureSwitch &&
+    distanceXZ(
+      player.position,
+      treasureSwitch.position
+    )<3
+  ){
+
+    activateTreasure();
+
+    return;
+  }
+
+  toast("Tidak ada yang bisa dilakukan di dekat sini.");
+}
+
+function npcText(role){
+
+  if(role==="Guide"){
+    return "Selamat datang di BLOCKVERSE!\n\nSemua area sudah terbuka. Tidak ada level requirement. Jelajahi dunia, kumpulkan coins, gunakan shop, ubah karakter, dan bersenang-senang.";
+  }
+
+  if(role==="Builder"){
+    return "Dunia ini adalah sandbox. Kamu bebas bergerak dan bereksperimen tanpa harus menyelesaikan quest terlebih dahulu.";
+  }
+
+  return "Fun Park punya mini-game Coin Rush. Kumpulkan coin sebanyak mungkin sebelum waktunya habis!";
+}
+
+function teleportTo(area){
+
+  const d=AREA_DATA[area];
+
+  let x=d.x;
+  let z=d.z;
+
+  if(area==="spawn"){
+    x=0;
+    z=8;
+  }else if(area==="valley"){
+    x=-45;
+    z=8;
+  }else if(area==="cave"){
+    x=45;
+    z=8;
+  }else if(area==="sky"){
+    x=0;
+    z=62;
+  }else if(area==="park"){
+    x=45;
+    z=-35;
+  }
+
+  player.position.set(
+    x,
+    terrainHeight(x,z),
+    z
   );
-  else if(n.userData.role==="Shop")openPanel("shop");
-  else openMiniGame();
- }
 
- if(target.type==="portal"){
-  portalSound();
-  currentArea=target.obj.userData.target;
-  const t=target.obj.userData.target;
-  const positions={
-   "Spawn City":[0,.3,8],"Green Valley":[45,.3,-10],
-   "Crystal Cave":[-38,.3,48],"Fun Park":[55,.3,48],"Sky Island":[0,16.5,62],
-   "Hidden Cave":[-2,.3,33]
+  state.checkpoint={
+    area,
+    x,
+    y:terrainHeight(x,z),
+    z
   };
-  const pos=positions[t]||positions["Spawn City"];
-  player.position.set(...pos);
-  state.checkpoint={x:pos[0],y:pos[1],z:pos[2]};
-  if(t==="Green Valley")achievement("explorer");
-  if(t==="Sky Island"){achievement("sky");addXP(100)}
-  toast("ENTERED "+t.toUpperCase());
- }
 
- if(target.type==="secret"){
-  state.secret=true;
-  const p=portals.find(p=>p.userData.secretPortal);
-  if(p)p.visible=true;
-  achievement("treasure");
-  addCoins(100);addXP(300);
-  toast("SECRET AREA UNLOCKED!");
-  target.obj.visible=false;
-  save();
- }
+  updateArea(area);
+  scheduleSave();
+
+  toast("🚀 Teleport ke "+d.name);
+}
+
+/* =========================================================
+   TREASURE
+========================================================= */
+
+function activateTreasure(){
+
+  if(state.quests.treasure){
+    toast("Treasure sudah ditemukan.");
+    return;
+  }
+
+  state.quests.treasure=true;
+
+  addCoins(250);
+  addXP(100);
+
+  unlockAchievement("treasure");
+
+  treasureSwitch.visible=false;
+
+  toast("💎 Harta rahasia ditemukan! +250 Coins");
+
+  scheduleSave();
+}
+
+/* =========================================================
+   ECONOMY
+========================================================= */
+
+function addCoins(amount){
+
+  state.coins=Math.max(
+    0,
+    state.coins+Math.floor(amount)
+  );
+
+  state.quests.collector=
+    Math.min(
+      100,
+      state.quests.collector+Math.max(0,amount>0?1:0)
+    );
+
+  updateHUD();
+  scheduleSave();
+}
+
+function addXP(amount){
+
+  state.xp+=Math.max(0,amount);
+
+  while(state.xp>=xpRequired()){
+
+    state.xp-=xpRequired();
+    state.level++;
+
+    addCoins(50);
+
+    toast("⭐ LEVEL UP! Level "+state.level);
+  }
+
+  updateHUD();
+  scheduleSave();
+}
+
+function xpRequired(){
+
+  return 100+(state.level-1)*50;
+}
+
+/* =========================================================
+   COIN COLLECTION
+========================================================= */
+
+function collectCoins(dt){
+
+  for(const c of coins){
+
+    if(c.collected || !c.mesh.visible) continue;
+
+    c.mesh.rotation.y+=dt*3;
+
+    const d=distanceXZ(
+      player.position,
+      c.mesh.position
+    );
+
+    const vertical=
+      Math.abs(player.position.y-c.mesh.position.y)<2.5;
+
+    if(d<1.5 && vertical){
+
+      c.collected=true;
+      c.mesh.visible=false;
+
+      if(miniGameActive){
+
+        coinRushCoins++;
+        $("miniScore").textContent=coinRushCoins;
+
+      }else{
+
+        addCoins(c.value);
+        addXP(5);
+
+        floatingText(
+          "+"+c.value,
+          c.mesh.position
+        );
+      }
+
+      state.quests.collector=
+        Math.min(
+          100,
+          state.quests.collector+1
+        );
+    }
+  }
+}
+
+/* =========================================================
+   QUEST / ACTIVITY
+========================================================= */
+
+function unlockAchievement(id){
+
+  if(state.achievements.includes(id)) return;
+
+  state.achievements.push(id);
+
+  const names={
+    treasure:"💎 Treasure Hunter",
+    explorer:"🌎 Explorer",
+    collector:"🪙 Coin Collector",
+    level10:"⭐ Level 10",
+    rush:"⚡ Coin Rush Master"
+  };
+
+  toast(
+    "🏆 Achievement: "+
+    (names[id]||id)
+  );
+
+  scheduleSave();
+}
+
+function updateAchievements(){
+
+  if(state.quests.explorer>=5){
+    unlockAchievement("explorer");
+  }
+
+  if(state.quests.collector>=50){
+    unlockAchievement("collector");
+  }
+
+  if(state.level>=10){
+    unlockAchievement("level10");
+  }
+}
+
+/* =========================================================
+   FLOATING TEXT / PARTICLES
+========================================================= */
+
+function floatingText(text,pos){
+
+  const canvas=document.createElement("canvas");
+  canvas.width=256;
+  canvas.height=64;
+
+  const ctx=canvas.getContext("2d");
+
+  ctx.font="bold 38px Arial";
+  ctx.fillStyle="#ffffff";
+  ctx.textAlign="center";
+  ctx.fillText(text,128,44);
+
+  const texture=new THREE.CanvasTexture(canvas);
+
+  const sprite=new THREE.Sprite(
+    new THREE.SpriteMaterial({
+      map:texture,
+      transparent:true
+    })
+  );
+
+  sprite.scale.set(3,.75,1);
+
+  sprite.position.copy(pos);
+  sprite.position.y+=1;
+
+  dynamicWorld.add(sprite);
+
+  effects.push({
+    object:sprite,
+    life:1
+  });
+}
+
+function updateEffects(dt){
+
+  for(let i=effects.length-1;i>=0;i--){
+
+    const e=effects[i];
+
+    e.life-=dt;
+
+    e.object.position.y+=dt*1.5;
+    e.object.material.opacity=
+      Math.max(0,e.life);
+
+    if(e.life<=0){
+
+      dynamicWorld.remove(e.object);
+
+      if(e.object.material.map){
+        e.object.material.map.dispose();
+      }
+
+      e.object.material.dispose();
+
+      effects.splice(i,1);
+    }
+  }
+}
+
+/* =========================================================
+   SHOP
+========================================================= */
+
+const SHOP_ITEMS=[
+  {
+    id:"skin_red",
+    name:"Skin Merah",
+    type:"skin",
+    value:"red",
+    price:100
+  },
+  {
+    id:"skin_green",
+    name:"Skin Hijau",
+    type:"skin",
+    value:"green",
+    price:100
+  },
+  {
+    id:"skin_purple",
+    name:"Skin Ungu",
+    type:"skin",
+    value:"purple",
+    price:150
+  },
+  {
+    id:"skin_yellow",
+    name:"Skin Kuning",
+    type:"skin",
+    value:"yellow",
+    price:150
+  },
+  {
+    id:"outfit_explorer",
+    name:"Explorer",
+    type:"outfit",
+    value:"explorer",
+    price:200
+  },
+  {
+    id:"outfit_ninja",
+    name:"Ninja",
+    type:"outfit",
+    value:"ninja",
+    price:300
+  },
+  {
+    id:"outfit_royal",
+    name:"Royal",
+    type:"outfit",
+    value:"royal",
+    price:500
+  },
+  {
+    id:"outfit_sports",
+    name:"Sports",
+    type:"outfit",
+    value:"sports",
+    price:250
+  },
+  {
+    id:"hair_spiky",
+    name:"Spiky Hair",
+    type:"hair",
+    value:"spiky",
+    price:150
+  },
+  {
+    id:"hair_cap",
+    name:"Cap",
+    type:"hair",
+    value:"cap",
+    price:150
+  },
+  {
+    id:"accessory_halo",
+    name:"Halo",
+    type:"accessory",
+    value:"halo",
+    price:350
+  },
+  {
+    id:"accessory_backpack",
+    name:"Backpack",
+    type:"accessory",
+    value:"backpack",
+    price:200
+  },
+  {
+    id:"effect_rainbow",
+    name:"Rainbow Effect",
+    type:"effect",
+    value:"rainbow",
+    price:700
+  }
+];
+
+function buyItem(item){
+
+  if(state.inventory.includes(item.id)){
+
+    equipItem(item);
+    return;
+  }
+
+  if(state.coins<item.price){
+
+    toast("🪙 Coins belum cukup.");
+    return;
+  }
+
+  state.coins-=item.price;
+
+  state.inventory.push(item.id);
+
+  equipItem(item);
+
+  toast("🛒 "+item.name+" dibeli!");
+
+  scheduleSave();
+  updateHUD();
+  showShop();
+}
+
+function equipItem(item){
+
+  state.customization[item.type]=item.value;
+
+  createPlayer();
+
+  toast("✨ "+item.name+" digunakan.");
+
+  scheduleSave();
+}
+
+function showShop(){
+
+  const html=`
+    <div class="closeRow">
+      <h1>🛒 Shop</h1>
+      <button class="close" onclick="window.closePanel()">✕</button>
+    </div>
+
+    <p>
+      Semua item tersedia untuk dibeli menggunakan Coins.
+      Tidak ada item yang dikunci berdasarkan level.
+    </p>
+
+    <div class="cards">
+      ${SHOP_ITEMS.map(item=>{
+
+        const owned=state.inventory.includes(item.id);
+
+        return `
+          <div class="card">
+            <h3>${item.name}</h3>
+            <small>${owned?"Sudah dimiliki":"Harga: "+item.price+" Coins"}</small>
+            <button
+              class="${owned?"equipped":""}"
+              onclick='window.shopAction(${JSON.stringify(item)})'>
+              ${owned?"PAKAI":"BELI"}
+            </button>
+          </div>
+        `;
+
+      }).join("")}
+    </div>
+  `;
+
+  panelContent.innerHTML=html;
+  panelOverlay.classList.remove("hidden");
+}
+
+window.shopAction=buyItem;
+
+/* =========================================================
+   CHARACTER
+========================================================= */
+
+function showCharacter(){
+
+  const faces=[
+    ["happy","🙂"],
+    ["cool","😎"],
+    ["star","⭐"]
+  ];
+
+  const skins=[
+    ["blue","Blue"],
+    ["red","Red"],
+    ["green","Green"],
+    ["purple","Purple"],
+    ["yellow","Yellow"]
+  ];
+
+  const html=`
+    <div class="closeRow">
+      <h1>👤 Karakter</h1>
+      <button class="close" onclick="window.closePanel()">✕</button>
+    </div>
+
+    <p>
+      Karakter dapat diubah kapan saja.
+    </p>
+
+    <h3>Wajah</h3>
+    <div class="cards">
+      ${faces.map(f=>`
+        <div class="card">
+          <h3>${f[1]}</h3>
+          <button onclick="window.setCustomization('face','${f[0]}')">
+            ${state.customization.face===f[0]?"DIPAKAI":"PILIH"}
+          </button>
+        </div>
+      `).join("")}
+    </div>
+
+    <h3>Skin</h3>
+    <div class="cards">
+      ${skins.map(s=>`
+        <div class="card">
+          <h3>${s[1]}</h3>
+          <button onclick="window.setCustomization('skin','${s[0]}')">
+            ${state.customization.skin===s[0]?"DIPAKAI":"PILIH"}
+          </button>
+        </div>
+      `).join("")}
+    </div>
+  `;
+
+  panelContent.innerHTML=html;
+  panelOverlay.classList.remove("hidden");
+}
+
+window.setCustomization=(type,value)=>{
+
+  if(type==="skin" && value!=="blue"){
+
+    const id="skin_"+value;
+
+    if(!state.inventory.includes(id)){
+      toast("Beli skin ini di Shop terlebih dahulu.");
+      return;
+    }
+  }
+
+  state.customization[type]=value;
+
+  createPlayer();
+
+  scheduleSave();
+
+  showCharacter();
+};
+
+/* =========================================================
+   INVENTORY
+========================================================= */
+
+function showInventory(){
+
+  const names={};
+
+  SHOP_ITEMS.forEach(i=>names[i.id]=i.name);
+
+  const html=`
+    <div class="closeRow">
+      <h1>🎒 Inventory</h1>
+      <button class="close" onclick="window.closePanel()">✕</button>
+    </div>
+
+    <div class="cards">
+      ${state.inventory.map(id=>`
+        <div class="card">
+          <h3>${names[id]||id}</h3>
+          <small>${id}</small>
+        </div>
+      `).join("")}
+    </div>
+  `;
+
+  panelContent.innerHTML=html;
+  panelOverlay.classList.remove("hidden");
+}
+
+/* =========================================================
+   ACTIVITIES
+========================================================= */
+
+function showQuests(){
+
+  const xpNeeded=xpRequired();
+
+  const html=`
+    <div class="closeRow">
+      <h1>🏆 Aktivitas</h1>
+      <button class="close" onclick="window.closePanel()">✕</button>
+    </div>
+
+    <div class="quest">
+      <div class="questTop">
+        <strong>🌎 Explorer</strong>
+        <span>${state.quests.explorer}/5</span>
+      </div>
+      <div class="progress">
+        <div style="width:${Math.min(100,state.quests.explorer/5*100)}%"></div>
+      </div>
+    </div>
+
+    <div class="quest">
+      <div class="questTop">
+        <strong>🪙 Collect Coins</strong>
+        <span>${Math.min(50,state.quests.collector)}/50</span>
+      </div>
+      <div class="progress">
+        <div style="width:${Math.min(100,state.quests.collector/50*100)}%"></div>
+      </div>
+    </div>
+
+    <div class="quest">
+      <div class="questTop">
+        <strong>💎 Treasure</strong>
+        <span>${state.quests.treasure?"COMPLETED":"AVAILABLE"}</span>
+      </div>
+    </div>
+
+    <div class="quest">
+      <div class="questTop">
+        <strong>⭐ Level</strong>
+        <span>${state.level} / 10</span>
+      </div>
+      <div class="progress">
+        <div style="width:${Math.min(100,state.level/10*100)}%"></div>
+      </div>
+    </div>
+
+    <h2>🏅 Achievements</h2>
+
+    ${
+      state.achievements.length
+      ?
+      state.achievements.map(a=>
+        `<div class="card">${a}</div>`
+      ).join("")
+      :
+      `<p>Belum ada achievement. Jelajahi dunia!</p>`
+    }
+
+    <h2>⚡ Mini Game</h2>
+
+    <div class="card">
+      <h3>Coin Rush</h3>
+      <p>Kumpulkan coin sebanyak mungkin dalam 30 detik.</p>
+      <button class="primary" onclick="window.startCoinRush()">
+        MULAI COIN RUSH
+      </button>
+    </div>
+  `;
+
+  panelContent.innerHTML=html;
+  panelOverlay.classList.remove("hidden");
+}
+
+/* =========================================================
+   WORLD PANEL
+========================================================= */
+
+function showWorld(){
+
+  const html=`
+    <div class="closeRow">
+      <h1>🌎 Dunia</h1>
+      <button class="close" onclick="window.closePanel()">✕</button>
+    </div>
+
+    <p>
+      Semua wilayah terbuka. Tidak ada level requirement.
+      Teleport ke area mana pun.
+    </p>
+
+    <div class="cards">
+      ${Object.entries(AREA_DATA).map(([id,d])=>`
+        <div class="card">
+          <h3>${d.name}</h3>
+          <small>Area terbuka</small>
+          <button onclick="window.teleportToArea('${id}')">
+            🚀 TELEPORT
+          </button>
+        </div>
+      `).join("")}
+    </div>
+  `;
+
+  panelContent.innerHTML=html;
+  panelOverlay.classList.remove("hidden");
+}
+
+window.teleportToArea=id=>{
+  closePanel();
+  teleportTo(id);
+};
+
+/* =========================================================
+   SETTINGS
+========================================================= */
+
+function showSettings(){
+
+  const html=`
+    <div class="closeRow">
+      <h1>⚙ Pengaturan</h1>
+      <button class="close" onclick="window.closePanel()">✕</button>
+    </div>
+
+    <div class="card">
+      <h3>Kualitas Grafis</h3>
+      <p>Kualitas saat ini: ${state.settings.quality}</p>
+
+      <div class="cards">
+        <button onclick="window.setQuality('low')">LOW</button>
+        <button onclick="window.setQuality('medium')">MEDIUM</button>
+        <button onclick="window.setQuality('high')">HIGH</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Sound Effect</h3>
+      <button onclick="window.toggleSound()">
+        ${state.settings.sound?"🔊 ON":"🔇 OFF"}
+      </button>
+    </div>
+
+    <div class="card">
+      <h3>Data</h3>
+      <button onclick="window.saveManual()">💾 SIMPAN SEKARANG</button>
+      <button class="danger" onclick="window.resetData()">RESET DATA
+      </button>
+    </div>
+  `;
+
+  panelContent.innerHTML=html;
+  panelOverlay.classList.remove("hidden");
+}
+
+window.setQuality=q=>{
+
+  state.settings.quality=q;
+
+  const dpr=
+    q==="low"
+    ?1
+    :q==="medium"
+    ?Math.min(devicePixelRatio,1.25)
+    :Math.min(devicePixelRatio,1.5);
+
+  renderer.setPixelRatio(dpr);
+
+  const distance=
+    q==="low"?110:
+    q==="medium"?145:
+    180;
+
+  scene.fog.far=distance;
+
+  scheduleSave();
+
+  showSettings();
+};
+
+window.toggleSound=()=>{
+  state.settings.sound=!state.settings.sound;
+  scheduleSave();
+  showSettings();
+};
+
+window.saveManual=()=>{
+  saveGame(false);
+};
+
+window.resetData=()=>{
+
+  if(confirm("Reset semua progress?")){
+
+    localStorage.removeItem(CONFIG.saveKey);
+
+    location.reload();
+  }
+};
+
+/* =========================================================
+   HOW TO PLAY
+========================================================= */
+
+function showHow(){
+
+  panelContent.innerHTML=`
+    <div class="closeRow">
+      <h1>❔ Cara Bermain</h1>
+      <button class="close" onclick="window.closePanel()">✕</button>
+    </div>
+
+    <div class="card">
+      <h3>🎮 PC</h3>
+      <p>
+        WASD / Arrow = bergerak<br>
+        Shift = sprint<br>
+        Space = lompat<br>
+        Mouse = kamera<br>
+        E = interaksi<br>
+        ESC = pause
+      </p>
+    </div>
+
+    <div class="card">
+      <h3>📱 Mobile</h3>
+      <p>
+        Joystick kiri = bergerak<br>
+        Geser area kanan = kamera<br>
+        ↑ = lompat<br>
+        ⚡ = sprint<br>
+        ✦ = interaksi
+      </p>
+    </div>
+
+    <div class="card">
+      <h3>🌎 Dunia</h3>
+      <p>
+        Semua area langsung terbuka. Tidak ada quest wajib,
+        tidak ada level requirement, dan tidak ada area terkunci.
+      </p>
+    </div>
+
+    <div class="card">
+      <h3>💰 Coins</h3>
+      <p>
+        Kumpulkan coin di seluruh dunia dan gunakan untuk
+        membeli kosmetik karakter.
+      </p>
+    </div>
+
+    <div class="card">
+      <h3>🏗️ Sandbox</h3>
+      <p>
+        Fokus utama game adalah eksplorasi dan kebebasan.
+        Aktivitas hanyalah tambahan, bukan kewajiban.
+      </p>
+    </div>
+  `;
+
+  panelOverlay.classList.remove("hidden");
 }
 
 /* =========================================================
    DIALOG
 ========================================================= */
-let dialogCallback=null;
-function openDialog(name,text,cb){
- document.getElementById("dialogName").textContent=name;
- document.getElementById("dialogText").textContent=text;
- dialogCallback=cb;
- document.getElementById("dialog").style.display="flex";
+
+function showDialog(title,text){
+
+  $("dialogTitle").textContent=title;
+  $("dialogText").textContent=text;
+
+  dialog.classList.remove("hidden");
 }
-document.getElementById("dialogClose").onclick=()=>document.getElementById("dialog").style.display="none";
-document.getElementById("dialogAccept").onclick=()=>{
- document.getElementById("dialog").style.display="none";
- if(dialogCallback)dialogCallback();
-};
+
+function closeDialog(){
+  dialog.classList.add("hidden");
+}
 
 /* =========================================================
-   SHOP / INVENTORY / CHARACTER
+   PAUSE
 ========================================================= */
-const shopItems=[
- {id:"blue",name:"BLUE OUTFIT",price:100,type:"outfit",value:"#3f75e8"},
- {id:"red",name:"RED OUTFIT",price:150,type:"outfit",value:"#e94e62"},
- {id:"gold",name:"GOLDEN HAT",price:300,type:"accessory",value:"gold"},
- {id:"rainbow",name:"RAINBOW EFFECT",price:500,type:"effect",value:"rainbow"}
-];
 
-function buyItem(item){
- const arr=state.inventory[item.type==="outfit"?"outfits":item.type==="accessory"?"accessories":"effects"];
- if(arr.includes(item.id)){equipItem(item);return}
- if(state.coins<item.price){toast("Coin kamu belum cukup.");beep(150,.1);return}
- state.coins-=item.price;arr.push(item.id);equipItem(item);rewardSound();save();
-}
-function equipItem(item){
- if(item.type==="outfit")state.customization.outfit=item.value;
- if(item.type==="accessory")state.customization.accessory=item.value;
- save();createPlayer();updateHUD();toast(item.name+" equipped");
-}
+function togglePause(){
 
-function openPanel(type){
- const panel=document.getElementById("panel");
- const c=document.getElementById("panelContent");
- let html="";
+  if(!gameStarted) return;
 
- if(type==="character"){
-  html=`<div class="sectionTitle">CHARACTER</div>
-  <div class="card"><b>SKIN COLOR</b><div class="optionGrid" style="margin-top:10px">
-  ${[
-   ["#ffd0a6","Warm"],["#f2b38e","Tan"],["#8f593f","Brown"],["#f1d1bd","Light"]
-  ].map(([v,n])=>`<div class="option ${state.customization.skin===v?"selected":""}" data-skin="${v}"><div class="swatch" style="background:${v}"></div>${n}</div>`).join("")}
-  </div></div>
-  <div class="card"><b>HAIR</b><div class="optionGrid" style="margin-top:10px">
-  ${["short","spiky","none"].map(v=>`<div class="option ${state.customization.hair===v?"selected":""}" data-hair="${v}">${v.toUpperCase()}</div>`).join("")}
-  </div></div>
-  <div class="card"><b>FACE</b><div class="optionGrid" style="margin-top:10px">
-  ${["happy","cool","star"].map(v=>`<div class="option ${state.customization.face===v?"selected":""}" data-face="${v}">${v.toUpperCase()}</div>`).join("")}
-  </div></div>`;
- }
+  paused=!paused;
 
- if(type==="shop"){
-  html=`<div class="sectionTitle">SHOP</div><div class="small">Gunakan coin untuk membuka cosmetic.</div><br>
-  ${shopItems.map(i=>`<div class="card"><div class="row"><div><b>${i.name}</b><div class="small">${i.price} COINS</div></div><button class="actionBtn" data-buy="${i.id}">BUY / EQUIP</button></div></div>`).join("")}`;
- }
+  if(paused){
 
- if(type==="inventory"){
-  html=`<div class="sectionTitle">INVENTORY</div>
-  <div class="card"><b>OUTFITS</b><br>${state.inventory.outfits.map(x=>`• ${x}`).join("<br>")}</div>
-  <div class="card"><b>ACCESSORIES</b><br>${state.inventory.accessories.map(x=>`• ${x}`).join("<br>")}</div>
-  <div class="card"><b>EFFECTS</b><br>${state.inventory.effects.map(x=>`• ${x}`).join("<br>")}</div>
-  <div class="card"><b>COLLECTIBLES</b><br>${state.inventory.collectibles.length?state.inventory.collectibles.join("<br>"):"Belum ada collectible."}</div>`;
- }
+    saveGame(true);
+    pause.classList.remove("hidden");
 
- if(type==="quests"){
-  const qs=[
-   ["Collect 10 Coins",state.quests.coins,"+100 XP +50 Coins"],
-   ["Explore Green Valley",state.quests.valley,"+150 XP"],
-   ["Find the Hidden Treasure",state.quests.treasure,"+300 XP"]
-  ];
-  html=`<div class="sectionTitle">QUESTS</div>${qs.map(q=>`<div class="card"><div class="row"><div><b>${q[0]}</b><div class="small">${q[2]}</div></div><strong>${q[1]?"✓ COMPLETED":"ACTIVE"}</strong></div></div>`).join("")}`;
- }
+  }else{
 
- if(type==="achievements"){
-  const names={
-   first:"FIRST STEPS",coins:"COIN COLLECTOR",explorer:"EXPLORER",
-   treasure:"TREASURE HUNTER",sky:"SKY JUMPER",level:"LEVEL UP"
-  };
-  html=`<div class="sectionTitle">ACHIEVEMENTS</div>${Object.entries(names).map(([id,n])=>
-   `<div class="card"><div class="row"><b>${n}</b><span>${state.achievements[id]?"🏆 UNLOCKED":"🔒 LOCKED"}</span></div></div>`).join("")}`;
- }
-
- if(type==="settings"){
-  html=`<div class="sectionTitle">SETTINGS</div>
-  <div class="card"><b>GRAPHICS</b><div class="optionGrid" style="margin-top:10px">
-  ${["LOW","MEDIUM","HIGH"].map(v=>`<div class="option ${quality===v?"selected":""}" data-quality="${v}">${v}</div>`).join("")}
-  </div><div class="small" style="margin-top:8px">AUTO: ${quality}</div></div>
-  <div class="card"><div class="row"><b>MUSIC</b><button class="actionBtn" id="musicToggle">${state.settings.music?"ON":"OFF"}</button></div></div>
-  <div class="card"><div class="row"><b>SFX</b><button class="actionBtn" id="sfxToggle">${state.settings.sfx?"ON":"OFF"}</button></div></div>
-  <div class="card"><b>CAMERA SENSITIVITY</b><input id="sens" type="range" min=".5" max="2" step=".1" value="${state.settings.sensitivity}" style="width:100%"></div>
-  <div class="card"><div class="row"><b>FPS COUNTER</b><button class="actionBtn" id="fpsToggle">${state.settings.fps?"ON":"OFF"}</button></div></div>
-  <button class="actionBtn" id="manualSave">SAVE PROGRESS</button>
-  <button class="actionBtn danger" id="resetData">RESET DATA</button>`;
- }
-
- if(type==="how"){
-  html=`<div class="sectionTitle">HOW TO PLAY</div>
-  <div class="card"><b>📱 MOBILE</b><br><br>Joystick kiri = bergerak.<br>Geser sisi kanan = kamera.<br>JUMP = melompat.<br>SPRINT = berlari.<br>ACTION = interaksi.</div>
-  <div class="card"><b>🖥 DESKTOP</b><br><br>WASD = bergerak<br>SPACE = lompat<br>SHIFT = sprint<br>Mouse = kamera<br>ESC = pause</div>
-  <div class="card"><b>🎯 TUJUAN</b><br><br>Jelajahi dunia, kumpulkan coin, selesaikan quest, buka area rahasia, naik level dan kumpulkan achievement.</div>`;
- }
-
- c.innerHTML=html;
- panel.style.display="flex";
-
- c.querySelectorAll("[data-skin]").forEach(el=>el.onclick=()=>{
-  state.customization.skin=el.dataset.skin;createPlayer();save();openPanel(type)
- });
- c.querySelectorAll("[data-hair]").forEach(el=>el.onclick=()=>{
-  state.customization.hair=el.dataset.hair;createPlayer();save();openPanel(type)
- });
- c.querySelectorAll("[data-face]").forEach(el=>el.onclick=()=>{
-  state.customization.face=el.dataset.face;save();openPanel(type)
- });
- c.querySelectorAll("[data-buy]").forEach(el=>el.onclick=()=>{
-  const item=shopItems.find(x=>x.id===el.dataset.buy);buyItem(item);openPanel(type)
- });
- c.querySelectorAll("[data-quality]").forEach(el=>el.onclick=()=>{
-  quality=el.dataset.quality;
-  state.settings.quality=quality;
-  applyQuality();
-  save();openPanel(type)
- });
-
- const music=document.getElementById("musicToggle");
- if(music)music.onclick=()=>{state.settings.music=!state.settings.music;save();openPanel(type)};
- const sfx=document.getElementById("sfxToggle");
- if(sfx)sfx.onclick=()=>{state.settings.sfx=!state.settings.sfx;save();openPanel(type)};
- const fps=document.getElementById("fpsToggle");
- if(fps)fps.onclick=()=>{state.settings.fps=!state.settings.fps;document.getElementById("fps").style.display=state.settings.fps?"block":"none";save();openPanel(type)};
- const sens=document.getElementById("sens");
- if(sens)sens.oninput=()=>{state.settings.sensitivity=parseFloat(sens.value);saveSilent()};
- const ms=document.getElementById("manualSave");
- if(ms)ms.onclick=save;
- const rd=document.getElementById("resetData");
- if(rd)rd.onclick=resetData;
-}
-
-document.querySelectorAll("[data-panel]").forEach(b=>b.onclick=()=>openPanel(b.dataset.panel));
-document.getElementById("closePanel").onclick=()=>document.getElementById("panel").style.display="none";
-
-/* =========================================================
-   MINI GAME
-========================================================= */
-function openMiniGame(){
- document.getElementById("miniGame").style.display="flex";
- document.getElementById("miniTitle").textContent="COIN RUSH";
- document.getElementById("miniInfo").textContent="Collect coins in the world for 30 seconds. Move quickly!";
- document.getElementById("miniStart").textContent="START";
-}
-document.getElementById("miniStart").onclick=()=>{
- document.getElementById("miniGame").style.display="none";
- miniGameActive=true;coinRushCoins=0;coinRushTime=30;
- toast("COIN RUSH STARTED!");
- /* respawn currently collected coins temporarily */
- coins3D.forEach(c=>{
-  if(c.area==="Fun Park"){
-   c.mesh.userData.collected=false;c.mesh.visible=true;
+    pause.classList.add("hidden");
+    clock.getDelta();
   }
- });
- setTimeout(()=>endMiniGame(),30000);
-};
-function endMiniGame(){
- if(!miniGameActive)return;
- miniGameActive=false;
- const reward=100+coinRushCoins*10;
- addCoins(reward);addXP(100);
- toast("COIN RUSH COMPLETE +"+reward+" COINS");
- rewardSound();
 }
 
 /* =========================================================
-   PARTICLES / FLOAT TEXT
+   PANEL
 ========================================================= */
-function burst(pos,color,count=8){
- const n=Math.min(count,CFG.quality[quality].particles);
- for(let i=0;i<n;i++){
-  const m=new THREE.Mesh(
-   new THREE.BoxGeometry(.08,.08,.08),
-   new THREE.MeshBasicMaterial({color,transparent:true})
-  );
-  m.position.copy(pos);
-  m.userData.v=new THREE.Vector3(
-   (Math.random()-.5)*4,Math.random()*4,(Math.random()-.5)*4
-  );
-  m.userData.life=1;
-  scene.add(m);particles.push(m);
- }
+
+function closePanel(){
+
+  panelOverlay.classList.add("hidden");
 }
-function floatText(text,pos){
- const div=document.createElement("div");
- div.textContent=text;
- div.style.cssText="position:fixed;color:#ffe05c;font-weight:1000;font-size:18px;pointer-events:none;text-shadow:0 2px 5px #000;z-index:35";
- document.body.appendChild(div);
- floatTexts.push({div,pos:pos.clone(),life:1});
+
+window.closePanel=closePanel;
+
+/* =========================================================
+   MENU
+========================================================= */
+
+function openMainMenu(){
+
+  gameStarted=false;
+  paused=false;
+  miniGameActive=false;
+
+  pause.classList.add("hidden");
+  panelOverlay.classList.add("hidden");
+  dialog.classList.add("hidden");
+  miniGame.classList.add("hidden");
+
+  hud.classList.add("hidden");
+  mobile.classList.add("hidden");
+
+  resetJoystick();
+
+  menu.classList.remove("hidden");
+
+  saveGame(true);
+}
+
+function startGame(){
+
+  menu.classList.add("hidden");
+
+  hud.classList.remove("hidden");
+  mobile.classList.remove("hidden");
+
+  gameStarted=true;
+  paused=false;
+
+  if(!player){
+    createPlayer();
+  }
+
+  toast("🎮 Selamat bermain!");
+
+  clock.getDelta();
+}
+
+/* =========================================================
+   MINI GAME COIN RUSH
+========================================================= */
+
+let miniGameActive=false;
+let coinRushTime=0;
+let coinRushCoins=0;
+
+function startCoinRush(){
+
+  closePanel();
+
+  if(miniGameActive) return;
+
+  miniGameActive=true;
+
+  coinRushTime=30;
+  coinRushCoins=0;
+
+  $("miniScore").textContent="0";
+  $("miniTimer").textContent="30";
+
+  miniGame.classList.remove("hidden");
+
+  /* respawn Fun Park coins */
+  for(const c of coins){
+
+    if(c.area==="park"){
+
+      c.collected=false;
+      c.mesh.visible=true;
+    }
+  }
+
+  teleportTo("park");
+
+  toast("⚡ COIN RUSH DIMULAI!");
+
+  if(!gameStarted) startGame();
+}
+
+window.startCoinRush=startCoinRush;
+
+function updateMiniGame(dt){
+
+  if(!miniGameActive || paused) return;
+
+  coinRushTime-=dt;
+
+  $("miniTimer").textContent=
+    Math.max(0,Math.ceil(coinRushTime));
+
+  if(coinRushTime<=0){
+
+    endMiniGame();
+  }
+}
+
+function endMiniGame(){
+
+  if(!miniGameActive) return;
+
+  miniGameActive=false;
+
+  miniGame.classList.add("hidden");
+
+  const reward=
+    50+
+    coinRushCoins*10;
+
+  addCoins(reward);
+  addXP(coinRushCoins*5);
+
+  if(coinRushCoins>=15){
+    unlockAchievement("rush");
+  }
+
+  toast(
+    "⚡ Coin Rush selesai! "+
+    coinRushCoins+
+    " coin → hadiah "+reward+" Coins"
+  );
+}
+
+/* =========================================================
+   DAILY
+========================================================= */
+
+function checkDaily(){
+
+  const date=new Date().toISOString().slice(0,10);
+
+  if(state.daily.date!==date){
+
+    state.daily.date=date;
+    state.daily.claimed=false;
+  }
+}
+
+function claimDaily(){
+
+  checkDaily();
+
+  if(state.daily.claimed){
+
+    toast("🎁 Reward hari ini sudah diambil.");
+    return;
+  }
+
+  state.daily.claimed=true;
+
+  addCoins(100);
+  addXP(25);
+
+  toast("🎁 Daily Reward +100 Coins");
+
+  scheduleSave();
 }
 
 /* =========================================================
    HUD
 ========================================================= */
+
 function updateHUD(){
- document.getElementById("coinText").textContent=state.coins;
- document.getElementById("levelText").textContent=state.level;
- document.getElementById("xpFill").style.width=(state.xp/xpNeeded()*100)+"%";
+
+  $("coinText").textContent=state.coins;
+  $("levelText").textContent=state.level;
+
+  $("xpText").textContent=
+    `${state.xp} / ${xpRequired()}`;
 }
+
+/* =========================================================
+   TOAST
+========================================================= */
+
 let toastTimer;
+
 function toast(text){
- const el=document.getElementById("toast");
- el.textContent=text;el.style.opacity="1";
- clearTimeout(toastTimer);
- toastTimer=setTimeout(()=>el.style.opacity="0",1800);
-}
-function updateHint(){
- const h=document.getElementById("hint");
- const t=nearestInteraction();
- if(t){
-  h.style.display="block";
-  h.textContent=t.type==="npc"?"ACTION • "+t.obj.userData.name:
-   t.type==="portal"?"ENTER AREA • "+t.obj.userData.label:"ACTIVATE SECRET SWITCH";
- }else h.style.display="none";
+
+  const el=$("toast");
+
+  el.textContent=text;
+
+  el.classList.add("show");
+
+  clearTimeout(toastTimer);
+
+  toastTimer=setTimeout(()=>{
+    el.classList.remove("show");
+  },2200);
 }
 
 /* =========================================================
-   QUALITY
+   BUTTON EVENTS
 ========================================================= */
-function detectQuality(){
- const s=innerWidth*innerHeight,ram=navigator.deviceMemory||4;
- if(s<700000||ram<=2)return"LOW";
- if(s<1500000||ram<=4)return"MEDIUM";
- return"HIGH";
-}
-function applyQuality(){
- const q=CFG.quality[quality];
- renderer.setPixelRatio(Math.min(devicePixelRatio,q.dpr));
- renderer.shadowMap.enabled=quality!=="LOW";
- scene.fog.far=q.view;
-}
 
-/* =========================================================
-   PAUSE / MENU
-========================================================= */
-function togglePause(){
- if(!gameStarted)return;
- paused=!paused;
- document.getElementById("pause").style.display=paused?"flex":"none";
-}
-document.getElementById("menuHUD").onclick=togglePause;
-document.getElementById("resumeBtn").onclick=togglePause;
-document.getElementById("saveBtn").onclick=save;
-document.getElementById("pauseSettings").onclick=()=>openPanel("settings");
-document.getElementById("pauseHow").onclick=()=>openPanel("how");
-document.getElementById("mainMenuBtn").onclick=()=>{
- paused=false;gameStarted=false;
- document.getElementById("pause").style.display="none";
- document.getElementById("menu").style.display="flex";
+$("playBtn").onclick=startGame;
+
+$("characterBtn").onclick=showCharacter;
+
+$("shopBtn").onclick=showShop;
+
+$("inventoryBtn").onclick=showInventory;
+
+$("worldBtn").onclick=showWorld;
+
+$("questsBtn").onclick=showQuests;
+
+$("settingsBtn").onclick=showSettings;
+
+$("howBtn").onclick=showHow;
+
+$("openMenu").onclick=togglePause;
+
+$("resumeBtn").onclick=togglePause;
+
+$("pauseSaveBtn").onclick=()=>{
+  saveGame(false);
 };
 
-/* =========================================================
-   STARTUP
-========================================================= */
-function startGame(){
- audio();
- gameStarted=true;paused=false;
- document.getElementById("menu").style.display="none";
- document.getElementById("pause").style.display="none";
- document.getElementById("mobile").style.display="block";
- dailyReward();
- state.checkpoint=state.checkpoint||{x:0,y:.3,z:8};
- currentArea="Spawn City";
- createPlayer();
- updateHUD();
- toast("Welcome Explorer!");
-}
-document.getElementById("playBtn").onclick=startGame;
-document.getElementById("tapPlay").onclick=()=>{
- document.getElementById("loading").style.opacity="0";
- setTimeout(()=>{
-  document.getElementById("loading").style.display="none";
-  document.getElementById("menu").style.display="flex";
- },450);
- audio();
-};
+$("pauseMenuBtn").onclick=openMainMenu;
+
+$("dialogClose").onclick=closeDialog;
+
+$("dialogOk").onclick=closeDialog;
 
 /* =========================================================
-   LOADING
+   RESIZE
 ========================================================= */
-async function init(){
- const bar=document.getElementById("progressBar");
- const text=document.getElementById("loadingText");
- for(let i=0;i<=100;i+=10){
-  await new Promise(r=>setTimeout(r,12));
-  bar.style.width=i+"%";
-  text.textContent=i<35?"Preparing world...":i<70?"Building adventure...":"Almost ready...";
- }
- buildWorld();
- createPlayer();
- updateHUD();
- document.getElementById("tapPlay").style.display="inline-block";
- text.textContent="World ready";
+
+window.addEventListener("resize",()=>{
+
+  camera.aspect=innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+
+  renderer.setSize(
+    innerWidth,
+    innerHeight
+  );
+});
+
+/* =========================================================
+   VISIBILITY
+========================================================= */
+
+document.addEventListener("visibilitychange",()=>{
+
+  if(document.hidden && gameStarted && !paused){
+
+    paused=true;
+    pause.classList.remove("hidden");
+    saveGame(true);
+  }
+});
+
+/* =========================================================
+   SAVE BEFORE LEAVE
+========================================================= */
+
+window.addEventListener("beforeunload",()=>{
+
+  if(player){
+
+    state.position={
+      x:player.position.x,
+      y:player.position.y,
+      z:player.position.z
+    };
+  }
+
+  saveGame(true);
+});
+
+/* =========================================================
+   MAIN UPDATE
+========================================================= */
+
+function update(dt){
+
+  if(!gameStarted || paused) return;
+
+  updateMovement(dt);
+  updateCamera(dt);
+  collectCoins(dt);
+  updateEffects(dt);
+  updateMiniGame(dt);
+  updateArea();
+  updateAchievements();
+
+  state.position={
+    x:player.position.x,
+    y:player.position.y,
+    z:player.position.z
+  };
+
+  /* explorer progress */
+  if(currentArea!=="spawn"){
+    state.quests.explorer=
+      Math.min(
+        5,
+        state.quests.explorer+dt*.015
+      );
+  }
+
+  /* NPC idle animation */
+  for(const n of npcs){
+
+    n.group.rotation.y+=dt*.15;
+
+    const bob=
+      Math.sin(performance.now()*.002+n.group.position.x)
+      *.04;
+
+    n.group.position.y=bob;
+  }
+
+  /* portal animation */
+  for(const p of portals){
+
+    p.group.rotation.y+=dt*.8;
+  }
 }
-init();
 
 /* =========================================================
    RENDER LOOP
 ========================================================= */
-let fpsFrames=0,fpsTime=performance.now();
 
-function animate(){
- requestAnimationFrame(animate);
- const now=performance.now();
- let dt=Math.min(.033,(now-lastTime)/1000);
- lastTime=now;
+function loop(){
 
- if(gameStarted&&!paused){
-  updatePlayer(dt);
-  updateCamera(dt);
-  collectCoins();
-  updateHint();
+  requestAnimationFrame(loop);
 
-  /* coin animation */
-  for(const c of coins3D){
-   if(!c.mesh.visible)continue;
-   c.mesh.rotation.y+=dt*2.5;
-   c.mesh.rotation.z=Math.sin(now*.002+c.mesh.position.x)*.08;
-   c.mesh.position.y=c.mesh.userData.baseY+Math.sin(now*.003+c.mesh.position.x)*.15;
-  }
+  const dt=Math.min(
+    clock.getDelta(),
+    .05
+  );
 
-  /* portals */
-  portals.forEach(p=>{
-   p.rotation.y+=dt*.7;
-   if(p.children[1])p.children[1].material.opacity=.15+.08*Math.sin(now*.004);
-  });
+  update(dt);
 
-  /* NPC animation */
-  npcs.forEach((n,i)=>{
-   n.position.y=Math.sin(now*.002+i)*.04;
-   n.rotation.y=Math.sin(now*.0008+i)*.12;
-  });
-
-  /* particles */
-  for(let i=particles.length-1;i>=0;i--){
-   const p=particles[i];
-   p.userData.life-=dt*1.7;
-   p.position.addScaledVector(p.userData.v,dt);
-   p.userData.v.y-=8*dt;
-   p.material.opacity=Math.max(0,p.userData.life);
-   if(p.userData.life<=0){
-    scene.remove(p);p.material.dispose();particles.splice(i,1);
-   }
-  }
-
-  /* floating text projection */
-  for(let i=floatTexts.length-1;i>=0;i--){
-   const f=floatTexts[i];f.life-=dt;
-   f.pos.y+=dt*1.2;
-   const v=f.pos.clone().project(camera);
-   f.div.style.left=((v.x*.5+.5)*innerWidth)+"px";
-   f.div.style.top=((-v.y*.5+.5)*innerHeight)+"px";
-   f.div.style.opacity=Math.max(0,f.life);
-   if(f.life<=0){f.div.remove();floatTexts.splice(i,1)}
-  }
-
-  if(miniGameActive){
-   coinRushTime-=dt;
-   document.getElementById("hint").textContent="COIN RUSH • "+Math.ceil(coinRushTime)+"s";
-  }
- }
-
- renderer.render(scene,camera);
-
- fpsFrames++;
- if(now-fpsTime>1000){
-  const fps=Math.round(fpsFrames*1000/(now-fpsTime));
-  document.getElementById("fps").textContent="FPS: "+fps;
-  fpsFrames=0;fpsTime=now;
- }
+  renderer.render(
+    scene,
+    camera
+  );
 }
-animate();
 
 /* =========================================================
-   RESIZE / VISIBILITY
+   LOADING
 ========================================================= */
-addEventListener("resize",()=>{
- camera.aspect=innerWidth/innerHeight;
- camera.updateProjectionMatrix();
- renderer.setSize(innerWidth,innerHeight);
- applyQuality();
-});
-document.addEventListener("visibilitychange",()=>{
- if(document.hidden&&gameStarted&&!paused)togglePause();
+
+async function boot(){
+
+  const steps=[
+    "Menyiapkan renderer...",
+    "Membangun Spawn City...",
+    "Membangun Green Valley...",
+    "Membangun Crystal Cave...",
+    "Membangun Sky Island...",
+    "Membangun Fun Park...",
+    "Menempatkan NPC...",
+    "Menempatkan coin...",
+    "Menyiapkan karakter...",
+    "Memuat progress..."
+  ];
+
+  for(let i=0;i<steps.length;i++){
+
+    loadingText.textContent=steps[i];
+
+    progress.style.width=
+      ((i+1)/steps.length*100)+"%";
+
+    await new Promise(r=>setTimeout(r,70));
+  }
+
+  createWorld();
+  createPlayer();
+
+  checkDaily();
+  updateHUD();
+
+  /* daily reward is intentionally not auto-claimed */
+  loadingText.textContent="Selesai!";
+
+  await new Promise(r=>setTimeout(r,250));
+
+  loading.classList.add("hidden");
+
+  loop();
+}
+
+boot();
+
+/* =========================================================
+   DAILY REWARD HOTKEY / EASY ACCESS
+========================================================= */
+
+window.claimDaily=claimDaily;
+
+/* =========================================================
+   DEBUG / SAFETY
+========================================================= */
+
+window.addEventListener("error",e=>{
+  console.error("BLOCKVERSE ERROR:",e.error||e.message);
 });
 
-/* =========================================================
-   SECRET QUEST CHECK
-========================================================= */
-setInterval(()=>{
- if(player&&player.position.x>30&&player.position.x<60&&player.position.z>-30&&player.position.z<30){
-  if(!state.quests.valley){
-   state.quests.valley=true;
-   addXP(150);
-   toast("QUEST COMPLETE: GREEN VALLEY");
-   achievement("explorer");
-  }
- }
-},1000);
-
-/* =========================================================
-   INITIAL SETTINGS
-========================================================= */
-quality=state.settings.quality==="AUTO"?detectQuality():state.settings.quality;
-applyQuality();
-document.getElementById("fps").style.display=state.settings.fps?"block":"none";
-
-/* Mobile buttons should not block portrait UI */
-if(!("ontouchstart" in window)){
- document.getElementById("mobile").style.opacity=".45";
-}
 </script>
+
 </body>
 </html>
