@@ -5,7 +5,7 @@
 <meta name="viewport"
       content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#07111f">
-<title>BLOCKVERSE — Open World Adventure</title>
+<title>BLOCKVERSE — Open World Creative Sandbox</title>
 
 <style>
 *{
@@ -90,11 +90,13 @@ button{
   display:flex;
   justify-content:space-between;
   align-items:flex-start;
+  gap:8px;
 }
 .stats{
   display:flex;
   gap:8px;
   flex-wrap:wrap;
+  align-items:center;
 }
 .stat{
   background:rgba(5,12,24,.78);
@@ -112,6 +114,20 @@ button{
 }
 .stat strong{
   font-size:15px;
+}
+.buildToggleBtn{
+  pointer-events:auto;
+  background:linear-gradient(135deg,#2e7d32,#43a047);
+  border:1px solid rgba(165,214,167,.5);
+  padding:8px 16px;
+  border-radius:15px;
+  font-weight:bold;
+  font-size:14px;
+  box-shadow:0 4px 15px rgba(46,125,50,.4);
+  transition:transform .15s;
+}
+.buildToggleBtn:active{
+  transform:scale(.95);
 }
 .menuBtn{
   pointer-events:auto;
@@ -145,6 +161,97 @@ button{
   background:rgba(0,0,0,.62);
   font-size:12px;
   white-space:nowrap;
+}
+
+/* RETICLE FOR BUILDING */
+#reticle{
+  position:fixed;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  width:12px;
+  height:12px;
+  border:2px solid rgba(255,255,255,.8);
+  border-radius:50%;
+  pointer-events:none;
+  z-index:15;
+  box-shadow:0 0 8px rgba(0,0,0,.5);
+}
+
+/* BUILD HUD TOOLBAR */
+#buildHUD{
+  position:fixed;
+  top:max(12px,env(safe-area-inset-top));
+  left:50%;
+  transform:translateX(-50%);
+  z-index:40;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:8px;
+  pointer-events:none;
+  width:min(96vw,700px);
+}
+.buildToolbar{
+  pointer-events:auto;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  background:rgba(5,12,24,.88);
+  border:1px solid rgba(255,255,255,.18);
+  padding:6px 10px;
+  border-radius:22px;
+  backdrop-filter:blur(16px);
+  box-shadow:0 12px 35px rgba(0,0,0,.45);
+  overflow-x:auto;
+  max-width:100%;
+}
+.buildToolbar::-webkit-scrollbar{display:none}
+.bBtn{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  min-width:54px;
+  height:52px;
+  padding:4px 8px;
+  border-radius:14px;
+  background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.12);
+  font-size:16px;
+  transition:all .15s ease;
+  flex-shrink:0;
+}
+.bBtn span{
+  font-size:9px;
+  font-weight:bold;
+  margin-top:2px;
+  letter-spacing:.3px;
+}
+.bBtn.active{
+  background:linear-gradient(135deg,#347cff,#7758ff);
+  border-color:rgba(255,255,255,.4);
+  box-shadow:0 0 15px rgba(52,124,255,.5);
+}
+.bBtn.danger{
+  background:rgba(220,53,69,.25);
+  border-color:rgba(220,53,69,.4);
+}
+.bBtn.primary{
+  background:rgba(40,167,69,.3);
+  border-color:rgba(40,167,69,.5);
+}
+.bBtn:active{
+  transform:scale(.94);
+}
+#buildHint{
+  background:rgba(4,10,20,.85);
+  border:1px solid rgba(255,255,255,.12);
+  padding:6px 14px;
+  border-radius:20px;
+  font-size:12px;
+  white-space:nowrap;
+  text-align:center;
 }
 
 /* MOBILE */
@@ -294,7 +401,7 @@ button{
 /* CARDS */
 .cards{
   display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+  grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
   gap:12px;
 }
 .card{
@@ -437,16 +544,31 @@ button{
         <small>Level</small>
         <strong id="levelText">1</strong>
       </div>
-      <div class="stat">
-        <small>XP</small>
-        <strong id="xpText">0 / 100</strong>
-      </div>
+      <button class="buildToggleBtn" id="buildToggleBtn">🧱 BUILD</button>
     </div>
     <button class="menuBtn" id="openMenu">☰</button>
   </div>
 
   <div id="areaName">Spawn City</div>
-  <div id="hint">Jelajahi dunia dan lakukan apa saja!</div>
+  <div id="hint">Jelajahi dunia dan bangun sesuka hati!</div>
+</div>
+
+<div id="reticle" class="hidden"></div>
+
+<!-- BUILD HUD TOOLBAR -->
+<div id="buildHUD" class="hidden">
+  <div class="buildToolbar">
+    <button class="bBtn" id="bBlocksBtn">🧱<br><span>BLOCKS</span></button>
+    <button class="bBtn active" id="bPlaceBtn">➕<br><span>PLACE</span></button>
+    <button class="bBtn" id="bDeleteBtn">🗑️<br><span>DELETE</span></button>
+    <button class="bBtn" id="bRotateBtn">🔄<br><span>ROTATE</span></button>
+    <button class="bBtn" id="bPickBtn">📋<br><span>PICK</span></button>
+    <button class="bBtn" id="bZoomInBtn">🔍+<br><span>ZOOM IN</span></button>
+    <button class="bBtn" id="bZoomOutBtn">🔍-<br><span>ZOOM OUT</span></button>
+    <button class="bBtn primary" id="bSaveBtn">💾<br><span>SAVE</span></button>
+    <button class="bBtn danger" id="bExitBtn">✕<br><span>EXIT</span></button>
+  </div>
+  <div id="buildHint">🧱 Build Mode — Pilih block lalu klik target untuk menempatkan</div>
 </div>
 
 <div id="mobile" class="hidden">
@@ -475,6 +597,7 @@ button{
 
     <div class="menuButtons">
       <button class="primary" id="playBtn">▶ MULAI BERMAIN</button>
+      <button class="secondary" id="buildMenuBtn">🧱 BUILD MODE</button>
       <button class="secondary" id="characterBtn">👤 KARAKTER</button>
       <button class="secondary" id="shopBtn">🛒 SHOP</button>
       <button class="secondary" id="inventoryBtn">🎒 INVENTORY</button>
@@ -485,7 +608,7 @@ button{
     </div>
 
     <p style="text-align:center;font-size:11px;margin-top:20px">
-      Progress tersimpan otomatis di perangkat.
+      Progress & bangunan tersimpan otomatis di perangkat.
     </p>
   </div>
 </div>
@@ -514,7 +637,7 @@ button{
     <p>Permainan dijeda.</p>
     <div class="menuButtons">
       <button class="primary" id="resumeBtn">▶ LANJUT</button>
-      <button class="secondary" id="pauseSaveBtn">💾 SIMPAN</button>
+      <button class="secondary" id="pauseSaveBtn">💾 SIMPAN DUNIA</button>
       <button class="secondary" id="pauseMenuBtn">⌂ MENU UTAMA</button>
     </div>
   </div>
@@ -551,9 +674,61 @@ const CONFIG = {
   walkSpeed:7,
   sprintSpeed:12,
   jumpForce:10.5,
-  saveKey:"blockverse_open_world_v3",
+  saveKey:"blockverse_open_world_v4",
   maxDPR:1.5,
   coinValue:10
+};
+
+/* =========================================================
+   BLOCK CATALOG (100% FREE & UNLIMITED)
+========================================================= */
+
+const BUILD_BLOCKS = {
+  // BASIC
+  grass: { name: "Grass Block", category: "BASIC", colorHex: "#59a84a", icon: "🌱", color: 0x59a84a },
+  dirt: { name: "Dirt Block", category: "BASIC", colorHex: "#795538", icon: "🟫", color: 0x795538 },
+  stone: { name: "Stone Block", category: "BASIC", colorHex: "#7a8288", icon: "🪨", color: 0x7a8288 },
+  sand: { name: "Sand Block", category: "BASIC", colorHex: "#e5c158", icon: "⏳", color: 0xe5c158 },
+  snow: { name: "Snow Block", category: "BASIC", colorHex: "#eef4f8", icon: "❄️", color: 0xeef4f8 },
+  water: { name: "Water Block", category: "BASIC", colorHex: "#33b5e5", icon: "💧", color: 0x33b5e5, transparent: true, opacity: 0.65 },
+
+  // BUILDING
+  wall: { name: "Wall Block", category: "BUILDING", colorHex: "#a0522d", icon: "🧱", color: 0xa0522d },
+  floor: { name: "Floor Slab", category: "BUILDING", colorHex: "#d2b48c", icon: "🪵", color: 0xd2b48c },
+  ceiling: { name: "Ceiling Slab", category: "BUILDING", colorHex: "#e0e0e0", icon: "⬜", color: 0xe0e0e0 },
+  roof: { name: "Roof Wedge", category: "BUILDING", colorHex: "#b22222", icon: "🏠", color: 0xb22222 },
+  glass: { name: "Glass Block", category: "BUILDING", colorHex: "#80deea", icon: "🪟", color: 0x80deea, transparent: true, opacity: 0.45 },
+  door: { name: "Wooden Door", category: "BUILDING", colorHex: "#5d4037", icon: "🚪", color: 0x5d4037 },
+  window: { name: "Window Frame", category: "BUILDING", colorHex: "#37474f", icon: "🖼️", color: 0x37474f },
+  brick: { name: "Red Brick", category: "BUILDING", colorHex: "#8d6e63", icon: "🧱", color: 0x8d6e63 },
+  concrete: { name: "Concrete Block", category: "BUILDING", colorHex: "#78909c", icon: "📦", color: 0x78909c },
+  wood: { name: "Timber Wood", category: "BUILDING", colorHex: "#4e342e", icon: "🪵", color: 0x4e342e },
+
+  // ROAD
+  road: { name: "Road Asphalt", category: "ROAD", colorHex: "#263238", icon: "🛣️", color: 0x263238 },
+  road_line: { name: "Road Line", category: "ROAD", colorHex: "#37474f", icon: "➖", color: 0x37474f },
+  sidewalk: { name: "Sidewalk", category: "ROAD", colorHex: "#90a4ae", icon: "🚶", color: 0x90a4ae },
+  curb: { name: "Curb Edge", category: "ROAD", colorHex: "#607d8b", icon: "⬛", color: 0x607d8b },
+  bridge: { name: "Bridge Deck", category: "ROAD", colorHex: "#3e2723", icon: "🌉", color: 0x3e2723 },
+
+  // DECORATION
+  lamp: { name: "Street Lamp", category: "DECORATION", colorHex: "#ffeb3b", icon: "💡", color: 0xffeb3b },
+  fence: { name: "Picket Fence", category: "DECORATION", colorHex: "#8d6e63", icon: "🚧", color: 0x8d6e63 },
+  sign: { name: "Sign Post", category: "DECORATION", colorHex: "#6d4c41", icon: "🪧", color: 0x6d4c41 },
+  bench: { name: "Park Bench", category: "DECORATION", colorHex: "#5d4037", icon: "🪑", color: 0x5d4037 },
+  tree: { name: "Garden Tree", category: "DECORATION", colorHex: "#2e7d32", icon: "🌳", color: 0x2e7d32 },
+  flower: { name: "Flower Bed", category: "DECORATION", colorHex: "#e91e63", icon: "🌸", color: 0xe91e63 },
+  bush: { name: "Foliage Bush", category: "DECORATION", colorHex: "#43a047", icon: "🌿", color: 0x43a047 },
+  rock: { name: "Boulder Rock", category: "DECORATION", colorHex: "#616161", icon: "🪨", color: 0x616161 },
+  pole: { name: "Steel Pole", category: "DECORATION", colorHex: "#455a64", icon: "💈", color: 0x455a64 },
+
+  // SPECIAL
+  platform: { name: "Platform Slab", category: "SPECIAL", colorHex: "#00bcd4", icon: "🛸", color: 0x00bcd4 },
+  stairs: { name: "Staircase", category: "SPECIAL", colorHex: "#78909c", icon: "🪜", color: 0x78909c },
+  ramp: { name: "Ramp Slope", category: "SPECIAL", colorHex: "#607d8b", icon: "📐", color: 0x607d8b },
+  pillar: { name: "Pillar Column", category: "SPECIAL", colorHex: "#e0e0e0", icon: "🏛️", color: 0xe0e0e0 },
+  arch: { name: "Archway", category: "SPECIAL", colorHex: "#546e7a", icon: "⛩️", color: 0x546e7a },
+  arena_block: { name: "Arena Block", category: "SPECIAL", colorHex: "#00e5ff", icon: "🟦", color: 0x00e5ff }
 };
 
 /* =========================================================
@@ -561,13 +736,15 @@ const CONFIG = {
 ========================================================= */
 
 const DEFAULT_STATE = {
-  version:3,
+  version:4,
 
   coins:0,
   xp:0,
   level:1,
 
   position:{x:0,y:1.1,z:8},
+
+  buildings:[], // Array of { id, type, x, y, z, rx, ry, rz, scale }
 
   customization:{
     skin:"blue",
@@ -637,6 +814,10 @@ function normalizeState(raw){
     if(Number.isFinite(raw.position.z)) s.position.z=raw.position.z;
   }
 
+  if(Array.isArray(raw.buildings)){
+    s.buildings = raw.buildings.filter(b => b && typeof b === "object" && typeof b.type === "string");
+  }
+
   if(raw.customization && typeof raw.customization==="object"){
     Object.assign(s.customization,raw.customization);
   }
@@ -690,7 +871,7 @@ function saveGame(silent=true){
 
   try{
     localStorage.setItem(CONFIG.saveKey,JSON.stringify(state));
-    if(!silent) toast("💾 Progress tersimpan");
+    if(!silent) toast("💾 Dunia berhasil disimpan!");
   }catch(e){
     console.warn("Save gagal",e);
   }
@@ -698,13 +879,13 @@ function saveGame(silent=true){
 
 function scheduleSave(){
   clearTimeout(saveTimer);
-  saveTimer=setTimeout(()=>saveGame(true),800);
+  saveTimer=setTimeout(()=>saveGame(true),600);
 }
 
 loadGame();
 
 /* =========================================================
-   DOM
+   DOM ELEMENTS
 ========================================================= */
 
 const $=id=>document.getElementById(id);
@@ -721,10 +902,25 @@ const panelContent=$("panelContent");
 const dialog=$("dialog");
 const pause=$("pause");
 const miniGame=$("miniGame");
+const buildHUD=$("buildHUD");
+const reticle=$("reticle");
 
 let gameStarted=false;
 let paused=false;
 let currentArea="spawn";
+
+/* =========================================================
+   BUILD MODE STATE
+========================================================= */
+
+let buildMode = false;
+let buildSubMode = "PLACE"; // "PLACE", "DELETE", "SELECT"
+let selectedBlockType = "grass";
+let buildRotationY = 0; // 0, PI/2, PI, 1.5*PI
+let ghostMesh = null;
+let playerBuildingsGroup;
+const raycaster = new THREE.Raycaster();
+const pointerVector = new THREE.Vector2(0, 0); // Center screen raycasting
 
 /* =========================================================
    THREE CORE
@@ -740,6 +936,7 @@ const dynamicWorld=new THREE.Group();
 
 let player;
 let playerVisual;
+let groundMesh;
 
 const coins=[];
 const npcs=[];
@@ -754,6 +951,9 @@ let onGround=false;
 let camYaw=0;
 let camPitch=.45;
 let camDistance=8;
+
+const MIN_CAM_DISTANCE = 2.5;
+const MAX_CAM_DISTANCE = 35;
 
 const keys={};
 
@@ -813,6 +1013,9 @@ clock=new THREE.Clock();
 
 scene.add(world);
 world.add(dynamicWorld);
+
+playerBuildingsGroup = new THREE.Group();
+scene.add(playerBuildingsGroup);
 
 /* =========================================================
    LIGHT
@@ -893,6 +1096,149 @@ function cylinder(r,h,color,x=0,y=0,z=0){
 }
 
 /* =========================================================
+   BLOCK PROCEDURAL MESH GENERATOR
+========================================================= */
+
+function createBlockMesh(type) {
+  const def = BUILD_BLOCKS[type] || BUILD_BLOCKS.grass;
+  const g = new THREE.Group();
+  
+  if (type === "water") {
+    const mesh = new THREE.Mesh(
+      new THREE.BoxGeometry(1, 0.9, 1),
+      new THREE.MeshStandardMaterial({ color: 0x33b5e5, transparent: true, opacity: 0.65, roughness: 0.1 })
+    );
+    g.add(mesh);
+  } else if (type === "roof" || type === "ramp") {
+    const geom = new THREE.BufferGeometry();
+    const vertices = new Float32Array([
+      -0.5, -0.5,  0.5,   0.5, -0.5,  0.5,   0.5, -0.5, -0.5,  -0.5, -0.5, -0.5,
+      -0.5,  0.5, -0.5,   0.5,  0.5, -0.5
+    ]);
+    const indices = [
+      0,1,2, 0,2,3,
+      0,1,5, 0,5,4,
+      2,3,4, 2,4,5,
+      0,4,3,
+      1,2,5
+    ];
+    geom.setIndex(indices);
+    geom.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+    geom.computeVertexNormals();
+    const mesh = new THREE.Mesh(geom, mat(def.color));
+    g.add(mesh);
+  } else if (type === "stairs") {
+    for (let i = 0; i < 3; i++) {
+      const step = new THREE.Mesh(
+        new THREE.BoxGeometry(1, 0.333, 1 - i * 0.3),
+        mat(def.color)
+      );
+      step.position.set(0, -0.333 + i * 0.333, -i * 0.15);
+      g.add(step);
+    }
+  } else if (type === "lamp") {
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 1.2), mat(0x37474f));
+    pole.position.y = 0.1;
+    const bulb = new THREE.Mesh(
+      new THREE.SphereGeometry(0.25, 12, 12),
+      new THREE.MeshStandardMaterial({ color: 0xffeb3b, emissive: 0xffeb3b, emissiveIntensity: 0.8 })
+    );
+    bulb.position.y = 0.75;
+    g.add(pole, bulb);
+  } else if (type === "tree") {
+    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.15, 0.6), mat(0x5d4037));
+    trunk.position.y = -0.2;
+    const leaves = new THREE.Mesh(new THREE.DodecahedronGeometry(0.45), mat(0x2e7d32));
+    leaves.position.y = 0.25;
+    g.add(trunk, leaves);
+  } else if (type === "fence") {
+    const post1 = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.8, 0.1), mat(0x8d6e63));
+    post1.position.set(-0.4, 0, 0);
+    const post2 = post1.clone();
+    post2.position.set(0.4, 0, 0);
+    const rail1 = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.08, 0.05), mat(0x8d6e63));
+    rail1.position.set(0, 0.15, 0);
+    const rail2 = rail1.clone();
+    rail2.position.set(0, -0.15, 0);
+    g.add(post1, post2, rail1, rail2);
+  } else if (type === "door") {
+    const frame = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 0.15), mat(0x3e2723));
+    const inner = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.9, 0.18), mat(0x8d6e63));
+    const knob = new THREE.Mesh(new THREE.SphereGeometry(0.06), mat(0xffd700));
+    knob.position.set(0.3, -0.05, 0.12);
+    g.add(frame, inner, knob);
+  } else if (type === "window") {
+    const frame = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 0.15), mat(0x37474f));
+    const glass = new THREE.Mesh(
+      new THREE.BoxGeometry(0.8, 0.8, 0.18),
+      new THREE.MeshStandardMaterial({ color: 0x80deea, transparent: true, opacity: 0.5 })
+    );
+    g.add(frame, glass);
+  } else if (type === "pillar") {
+    const col = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 1, 16), mat(def.color));
+    g.add(col);
+  } else if (type === "arch") {
+    const p1 = new THREE.Mesh(new THREE.BoxGeometry(0.25, 1, 0.25), mat(0x546e7a));
+    p1.position.x = -0.375;
+    const p2 = p1.clone();
+    p2.position.x = 0.375;
+    const top = new THREE.Mesh(new THREE.BoxGeometry(1, 0.25, 0.25), mat(0x546e7a));
+    top.position.y = 0.375;
+    g.add(p1, p2, top);
+  } else {
+    const h = (type === "floor" || type === "road" || type === "platform") ? 0.2 : (type === "curb" ? 0.3 : 1);
+    const mesh = new THREE.Mesh(
+      new THREE.BoxGeometry(1, h, 1),
+      def.transparent ? new THREE.MeshStandardMaterial({ color: def.color, transparent: true, opacity: def.opacity || 0.6 }) : mat(def.color)
+    );
+    g.add(mesh);
+  }
+
+  g.traverse(child => {
+    if (child.isMesh) {
+      child.castShadow = true;
+      child.receiveShadow = true;
+    }
+  });
+
+  return g;
+}
+
+/* =========================================================
+   GHOST PREVIEW SETUP
+========================================================= */
+
+function initGhostPreview() {
+  if (ghostMesh) scene.remove(ghostMesh);
+  ghostMesh = new THREE.Group();
+  updateGhostGeometry();
+  scene.add(ghostMesh);
+  ghostMesh.visible = false;
+}
+
+function updateGhostGeometry() {
+  if (!ghostMesh) return;
+  while(ghostMesh.children.length > 0) {
+    ghostMesh.remove(ghostMesh.children[0]);
+  }
+
+  const model = createBlockMesh(selectedBlockType);
+  model.traverse(child => {
+    if (child.isMesh) {
+      child.material = new THREE.MeshBasicMaterial({
+        color: buildSubMode === "DELETE" ? 0xff3366 : 0x40ffaa,
+        transparent: true,
+        opacity: 0.55,
+        wireframe: false
+      });
+      child.castShadow = false;
+      child.receiveShadow = false;
+    }
+  });
+  ghostMesh.add(model);
+}
+
+/* =========================================================
    WORLD HELPERS
 ========================================================= */
 
@@ -926,7 +1272,7 @@ function clearWorld(){
 
 function addGround(){
 
-  const ground=box(
+  groundMesh = box(
     CONFIG.worldSize,
     1,
     CONFIG.worldSize,
@@ -936,7 +1282,8 @@ function addGround(){
     0
   );
 
-  ground.receiveShadow=true;
+  groundMesh.receiveShadow=true;
+  groundMesh.userData.isGround = true;
 }
 
 function addRoad(x,z,w,d){
@@ -1021,6 +1368,36 @@ function addMountain(x,z,r=7,h=12){
   m.receiveShadow=true;
 
   world.add(m);
+}
+
+/* =========================================================
+   REBUILD PLAYER BUILDINGS FROM SAVED STATE
+========================================================= */
+
+function rebuildPlayerBuildings() {
+  while (playerBuildingsGroup.children.length > 0) {
+    const obj = playerBuildingsGroup.children[0];
+    playerBuildingsGroup.remove(obj);
+    obj.traverse(child => {
+      if (child.geometry) child.geometry.dispose();
+      if (child.material) {
+        if (Array.isArray(child.material)) child.material.forEach(m => m.dispose());
+        else child.material.dispose();
+      }
+    });
+  }
+
+  if (!Array.isArray(state.buildings)) state.buildings = [];
+
+  for (const b of state.buildings) {
+    if (!b || !b.type) continue;
+    const mesh = createBlockMesh(b.type);
+    mesh.position.set(b.x, b.y, b.z);
+    mesh.rotation.y = b.ry || 0;
+    mesh.userData.isPlayerBuilt = true;
+    mesh.userData.buildingData = b;
+    playerBuildingsGroup.add(mesh);
+  }
 }
 
 /* =========================================================
@@ -1289,11 +1666,9 @@ function createWorld(){
       62+Math.sin(a)*12,
       .65
     );
-
-    // adjust tree height naturally from ground; visual island trees
   }
 
-  /* portals: each is placed at its actual destination area */
+  /* portals */
   addPortal("spawn",0,8);
   addPortal("valley",-45,8);
   addPortal("cave",45,8);
@@ -1308,6 +1683,8 @@ function createWorld(){
   createCoins();
 
   createTreasureSwitch();
+
+  rebuildPlayerBuildings();
 
   updateArea("spawn");
 }
@@ -1547,7 +1924,6 @@ function getAreaAt(x,z){
 
 function terrainHeight(x,z){
 
-  /* Sky island only within actual island radius */
   const dx=x;
   const dz=z-62;
 
@@ -1577,14 +1953,12 @@ function updateArea(force=null){
 
 function collidesAt(x,z){
 
-  /* world bounds */
   const limit=CONFIG.worldSize/2-2;
 
   if(x<-limit || x>limit || z<-limit || z>limit){
     return true;
   }
 
-  /* houses / trees */
   for(const o of obstacles){
 
     const dx=x-o.x;
@@ -1674,7 +2048,6 @@ function updateMovement(dt){
     player.position.y+=velocityY*dt;
   }
 
-  /* Fall recovery */
   if(player.position.y<-12){
 
     respawn();
@@ -1746,7 +2119,7 @@ function animatePlayer(dt,move){
 }
 
 /* =========================================================
-   CAMERA
+   CAMERA & ZOOM
 ========================================================= */
 
 function updateCamera(dt){
@@ -1783,6 +2156,47 @@ function updateCamera(dt){
 
   camera.lookAt(target);
 }
+
+function zoomCamera(delta) {
+  camDistance = THREE.MathUtils.clamp(camDistance + delta, MIN_CAM_DISTANCE, MAX_CAM_DISTANCE);
+}
+
+/* Mouse Wheel Zoom */
+window.addEventListener("wheel", (e) => {
+  if (!gameStarted || paused) return;
+  zoomCamera(e.deltaY * 0.012);
+}, { passive: true });
+
+/* Pinch to Zoom for Mobile */
+let initialPinchDistance = null;
+let initialCamDistance = null;
+
+function getTouchDistance(t1, t2) {
+  const dx = t1.clientX - t2.clientX;
+  const dy = t1.clientY - t2.clientY;
+  return Math.hypot(dx, dy);
+}
+
+window.addEventListener("touchstart", (e) => {
+  if (e.touches.length === 2) {
+    initialPinchDistance = getTouchDistance(e.touches[0], e.touches[1]);
+    initialCamDistance = camDistance;
+  }
+}, { passive: true });
+
+window.addEventListener("touchmove", (e) => {
+  if (e.touches.length === 2 && initialPinchDistance !== null) {
+    const currentDist = getTouchDistance(e.touches[0], e.touches[1]);
+    const factor = initialPinchDistance / currentDist;
+    camDistance = THREE.MathUtils.clamp(initialCamDistance * factor, MIN_CAM_DISTANCE, MAX_CAM_DISTANCE);
+  }
+}, { passive: true });
+
+window.addEventListener("touchend", (e) => {
+  if (e.touches.length < 2) {
+    initialPinchDistance = null;
+  }
+});
 
 /* =========================================================
    CAMERA POINTER
@@ -1959,8 +2373,224 @@ $("jumpBtn").addEventListener("pointerdown",e=>{
 
 $("actionBtn").addEventListener("pointerdown",e=>{
   e.preventDefault();
-  interact();
+  if (buildMode) {
+    executeBuildModeAction();
+  } else {
+    interact();
+  }
 });
+
+/* =========================================================
+   BUILD MODE SYSTEM & RAYCASTING
+========================================================= */
+
+function toggleBuildMode() {
+  buildMode = !buildMode;
+  if (buildMode) {
+    buildHUD.classList.remove("hidden");
+    reticle.classList.remove("hidden");
+    $("buildToggleBtn").textContent = "🌎 EXPLORE";
+    $("buildToggleBtn").style.background = "linear-gradient(135deg,#347cff,#7758ff)";
+    toast("🧱 Build Mode Aktif!");
+    if (!ghostMesh) initGhostPreview();
+    ghostMesh.visible = true;
+  } else {
+    buildHUD.classList.add("hidden");
+    reticle.classList.add("hidden");
+    $("buildToggleBtn").textContent = "🧱 BUILD";
+    $("buildToggleBtn").style.background = "linear-gradient(135deg,#2e7d32,#43a047)";
+    toast("🌎 Mode Eksplorasi");
+    if (ghostMesh) ghostMesh.visible = false;
+  }
+}
+
+function setBuildSubMode(mode) {
+  buildSubMode = mode;
+  $("bPlaceBtn").classList.toggle("active", mode === "PLACE");
+  $("bDeleteBtn").classList.toggle("active", mode === "DELETE");
+  $("bPickBtn").classList.toggle("active", mode === "SELECT");
+  
+  if (mode === "PLACE") {
+    $("buildHint").textContent = "🧱 Place Mode — Klik target untuk menempatkan block";
+  } else if (mode === "DELETE") {
+    $("buildHint").textContent = "🗑️ Delete Mode — Klik block buatan untuk menghapus";
+  } else if (mode === "SELECT") {
+    $("buildHint").textContent = "📋 Pick Mode — Klik block buatan untuk menyalin tipe";
+  }
+  updateGhostGeometry();
+}
+
+function updateGhostRaycast() {
+  if (!buildMode || !ghostMesh) return;
+
+  raycaster.setFromCamera(pointerVector, camera);
+
+  const targets = [groundMesh, ...world.children, ...playerBuildingsGroup.children];
+  const intersects = raycaster.intersectObjects(targets, true);
+
+  if (intersects.length > 0) {
+    let hit = intersects[0];
+    
+    // Ignore player or ghost mesh itself
+    for (const h of intersects) {
+      if (h.object.ancestorOf && (h.object.ancestorOf(player) || h.object.ancestorOf(ghostMesh))) continue;
+      hit = h;
+      break;
+    }
+
+    const normal = hit.face ? hit.face.normal.clone().transformDirection(hit.object.matrixWorld).normalize() : new THREE.Vector3(0, 1, 0);
+
+    if (buildSubMode === "DELETE" || buildSubMode === "SELECT") {
+      let targetBlock = hit.object;
+      while (targetBlock.parent && targetBlock.parent !== playerBuildingsGroup && targetBlock.parent !== scene) {
+        targetBlock = targetBlock.parent;
+      }
+      if (targetBlock.userData && targetBlock.userData.isPlayerBuilt) {
+        ghostMesh.position.copy(targetBlock.position);
+        ghostMesh.rotation.y = targetBlock.rotation.y;
+        ghostMesh.visible = true;
+      } else {
+        ghostMesh.visible = false;
+      }
+      return;
+    }
+
+    // PLACE MODE
+    const calcPoint = hit.point.clone().add(normal.clone().multiplyScalar(0.49));
+    const snapX = Math.round(calcPoint.x);
+    let snapY = Math.round(calcPoint.y);
+    const snapZ = Math.round(calcPoint.z);
+
+    if (snapY < 0) snapY = 0;
+
+    ghostMesh.position.set(snapX, snapY, snapZ);
+    ghostMesh.rotation.y = buildRotationY;
+    ghostMesh.visible = true;
+  } else {
+    ghostMesh.visible = false;
+  }
+}
+
+function executeBuildModeAction() {
+  if (!buildMode || !ghostMesh.visible) return;
+
+  if (buildSubMode === "PLACE") {
+    placeBlock();
+  } else if (buildSubMode === "DELETE") {
+    deleteBlock();
+  } else if (buildSubMode === "SELECT") {
+    pickBlock();
+  }
+}
+
+function placeBlock() {
+  const x = ghostMesh.position.x;
+  const y = ghostMesh.position.y;
+  const z = ghostMesh.position.z;
+
+  const existing = state.buildings.find(b => Math.abs(b.x - x) < 0.1 && Math.abs(b.y - y) < 0.1 && Math.abs(b.z - z) < 0.1);
+  if (existing) {
+    toast("⚠️ Posisi sudah terisi!");
+    return;
+  }
+
+  const id = "block_" + Date.now() + "_" + Math.floor(Math.random() * 10000);
+  const bData = {
+    id,
+    type: selectedBlockType,
+    x, y, z,
+    rx: 0,
+    ry: buildRotationY,
+    rz: 0,
+    scale: 1
+  };
+
+  const mesh = createBlockMesh(selectedBlockType);
+  mesh.position.set(x, y, z);
+  mesh.rotation.y = buildRotationY;
+  mesh.userData.isPlayerBuilt = true;
+  mesh.userData.buildingData = bData;
+
+  playerBuildingsGroup.add(mesh);
+  state.buildings.push(bData);
+
+  // Animation pop
+  mesh.scale.set(0.1, 0.1, 0.1);
+  let s = 0.1;
+  const popTimer = setInterval(() => {
+    s += 0.2;
+    if (s >= 1) {
+      mesh.scale.set(1, 1, 1);
+      clearInterval(popTimer);
+    } else {
+      mesh.scale.set(s, s, s);
+    }
+  }, 16);
+
+  state.quests.builder = (state.quests.builder || 0) + 1;
+  toast("🧱 Block ditempatkan");
+  scheduleSave();
+}
+
+function deleteBlock() {
+  raycaster.setFromCamera(pointerVector, camera);
+  const intersects = raycaster.intersectObjects(playerBuildingsGroup.children, true);
+
+  if (intersects.length > 0) {
+    let target = intersects[0].object;
+    while (target.parent && target.parent !== playerBuildingsGroup) {
+      target = target.parent;
+    }
+    if (target.userData && target.userData.isPlayerBuilt) {
+      const bData = target.userData.buildingData;
+
+      playerBuildingsGroup.remove(target);
+
+      target.traverse(child => {
+        if (child.geometry) child.geometry.dispose();
+        if (child.material) {
+          if (Array.isArray(child.material)) child.material.forEach(m => m.dispose());
+          else child.material.dispose();
+        }
+      });
+
+      state.buildings = state.buildings.filter(b => b.id !== bData.id && !(Math.abs(b.x - bData.x) < 0.1 && Math.abs(b.y - bData.y) < 0.1 && Math.abs(b.z - bData.z) < 0.1));
+
+      toast("🗑️ Block dihapus");
+      scheduleSave();
+      return;
+    }
+  }
+  toast("ℹ️ Hanya block buatan pemain yang dapat dihapus.");
+}
+
+function rotateBlock() {
+  buildRotationY = (buildRotationY + Math.PI / 2) % (Math.PI * 2);
+  if (ghostMesh) ghostMesh.rotation.y = buildRotationY;
+  const deg = Math.round((buildRotationY * 180) / Math.PI);
+  toast("🔄 Rotasi: " + deg + "°");
+}
+
+function pickBlock() {
+  raycaster.setFromCamera(pointerVector, camera);
+  const intersects = raycaster.intersectObjects(playerBuildingsGroup.children, true);
+
+  if (intersects.length > 0) {
+    let target = intersects[0].object;
+    while (target.parent && target.parent !== playerBuildingsGroup) {
+      target = target.parent;
+    }
+    if (target.userData && target.userData.buildingData) {
+      const bData = target.userData.buildingData;
+      selectedBlockType = bData.type;
+      buildRotationY = bData.ry || 0;
+      setBuildSubMode("PLACE");
+      toast("📋 Block disalin: " + (BUILD_BLOCKS[selectedBlockType]?.name || selectedBlockType));
+      return;
+    }
+  }
+  toast("ℹ️ Arahkan ke block buatan untuk menyalin.");
+}
 
 /* =========================================================
    KEYBOARD
@@ -1969,6 +2599,16 @@ $("actionBtn").addEventListener("pointerdown",e=>{
 window.addEventListener("keydown",e=>{
 
   keys[e.code]=true;
+
+  if (e.code === "KeyB") {
+    toggleBuildMode();
+  }
+
+  if (buildMode) {
+    if (e.code === "KeyR") rotateBlock();
+    if (e.code === "KeyX" || e.code === "Delete") setBuildSubMode(buildSubMode === "DELETE" ? "PLACE" : "DELETE");
+    if (e.code === "KeyE") executeBuildModeAction();
+  }
 
   if(e.code==="Space"){
     e.preventDefault();
@@ -1989,6 +2629,14 @@ window.addEventListener("keydown",e=>{
 
 window.addEventListener("keyup",e=>{
   keys[e.code]=false;
+});
+
+/* Canvas Click to Place/Interact */
+renderer.domElement.addEventListener("click", (e) => {
+  if (!gameStarted || paused) return;
+  if (buildMode) {
+    executeBuildModeAction();
+  }
 });
 
 /* =========================================================
@@ -2056,17 +2704,17 @@ function interact(){
     return;
   }
 
-  toast("Tidak ada yang bisa dilakukan di dekat sini.");
+  toast("Tidak ada objek interaktif di dekat sini.");
 }
 
 function npcText(role){
 
   if(role==="Guide"){
-    return "Selamat datang di BLOCKVERSE!\n\nSemua area sudah terbuka. Tidak ada level requirement. Jelajahi dunia, kumpulkan coins, gunakan shop, ubah karakter, dan bersenang-senang.";
+    return "Selamat datang di BLOCKVERSE!\n\nDunia ini adalah Open World Creative Sandbox! Gunakan tombol 🧱 BUILD untuk membangun struktur bebas tanpa batasan!";
   }
 
   if(role==="Builder"){
-    return "Dunia ini adalah sandbox. Kamu bebas bergerak dan bereksperimen tanpa harus menyelesaikan quest terlebih dahulu.";
+    return "Semua block di dunia ini GRATIS dan UNLIMITED. Kamu tidak perlu coin atau level untuk membuat kota impianmu!";
   }
 
   return "Fun Park punya mini-game Coin Rush. Kumpulkan coin sebanyak mungkin sebelum waktunya habis!";
@@ -2342,101 +2990,92 @@ function updateEffects(dt){
 }
 
 /* =========================================================
+   BLOCK PALETTE MODAL
+========================================================= */
+
+function showBlockPalette() {
+  const categories = ["BASIC", "BUILDING", "ROAD", "DECORATION", "SPECIAL"];
+  let activeTab = window.currentPaletteTab || "BASIC";
+
+  const renderBlocks = (cat) => {
+    return Object.entries(BUILD_BLOCKS)
+      .filter(([id, data]) => data.category === cat)
+      .map(([id, data]) => {
+        const selected = selectedBlockType === id;
+        return `
+          <div class="card ${selected ? 'equipped' : ''}" style="text-align:center;padding:12px;">
+            <div style="width:100%;height:45px;border-radius:12px;background:${data.colorHex};margin-bottom:8px;display:flex;align-items:center;justify-content:center;font-size:24px;border:1px solid rgba(255,255,255,0.2);">
+              ${data.icon}
+            </div>
+            <strong style="font-size:12px;display:block;margin-bottom:4px;">${data.name}</strong>
+            <small style="color:#4de1ff;font-weight:bold;display:block;margin-bottom:8px;">FREE • UNLIMITED</small>
+            <button class="${selected ? 'equipped' : 'primary'}" onclick="window.selectBuildingBlock('${id}')">
+              ${selected ? 'DIPAKAI' : 'PILIH'}
+            </button>
+          </div>
+        `;
+      }).join("");
+  };
+
+  const html = `
+    <div class="closeRow">
+      <h1>🧱 Building Palette</h1>
+      <button class="close" onclick="window.closePanel()">✕</button>
+    </div>
+    <p style="margin-bottom:15px;color:#62d9ff;">
+      ✨ Semua block GRATIS & UNLIMITED! Pilih block dan buat dunia impianmu.
+    </p>
+
+    <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:12px;margin-bottom:15px;border-bottom:1px solid rgba(255,255,255,0.1);">
+      ${categories.map(cat => `
+        <button 
+          class="${activeTab === cat ? 'primary' : 'secondary'}" 
+          style="min-height:36px;padding:0 14px;font-size:12px;flex-shrink:0;"
+          onclick="window.switchPaletteTab('${cat}')">
+          ${cat}
+        </button>
+      `).join("")}
+    </div>
+
+    <div class="cards" id="paletteGrid">
+      ${renderBlocks(activeTab)}
+    </div>
+  `;
+
+  panelContent.innerHTML = html;
+  panelOverlay.classList.remove("hidden");
+}
+
+window.switchPaletteTab = (cat) => {
+  window.currentPaletteTab = cat;
+  showBlockPalette();
+};
+
+window.selectBuildingBlock = (id) => {
+  selectedBlockType = id;
+  setBuildSubMode("PLACE");
+  closePanel();
+  toast("🧱 Block dipilih: " + BUILD_BLOCKS[id].name);
+};
+
+/* =========================================================
    SHOP
 ========================================================= */
 
 const SHOP_ITEMS=[
-  {
-    id:"skin_red",
-    name:"Skin Merah",
-    type:"skin",
-    value:"red",
-    price:100
-  },
-  {
-    id:"skin_green",
-    name:"Skin Hijau",
-    type:"skin",
-    value:"green",
-    price:100
-  },
-  {
-    id:"skin_purple",
-    name:"Skin Ungu",
-    type:"skin",
-    value:"purple",
-    price:150
-  },
-  {
-    id:"skin_yellow",
-    name:"Skin Kuning",
-    type:"skin",
-    value:"yellow",
-    price:150
-  },
-  {
-    id:"outfit_explorer",
-    name:"Explorer",
-    type:"outfit",
-    value:"explorer",
-    price:200
-  },
-  {
-    id:"outfit_ninja",
-    name:"Ninja",
-    type:"outfit",
-    value:"ninja",
-    price:300
-  },
-  {
-    id:"outfit_royal",
-    name:"Royal",
-    type:"outfit",
-    value:"royal",
-    price:500
-  },
-  {
-    id:"outfit_sports",
-    name:"Sports",
-    type:"outfit",
-    value:"sports",
-    price:250
-  },
-  {
-    id:"hair_spiky",
-    name:"Spiky Hair",
-    type:"hair",
-    value:"spiky",
-    price:150
-  },
-  {
-    id:"hair_cap",
-    name:"Cap",
-    type:"hair",
-    value:"cap",
-    price:150
-  },
-  {
-    id:"accessory_halo",
-    name:"Halo",
-    type:"accessory",
-    value:"halo",
-    price:350
-  },
-  {
-    id:"accessory_backpack",
-    name:"Backpack",
-    type:"accessory",
-    value:"backpack",
-    price:200
-  },
-  {
-    id:"effect_rainbow",
-    name:"Rainbow Effect",
-    type:"effect",
-    value:"rainbow",
-    price:700
-  }
+  { id:"skin_red", name:"Skin Merah", type:"skin", value:"red", price:100 },
+  { id:"skin_green", name:"Skin Hijau", type:"skin", value:"green", price:100 },
+  { id:"skin_purple", name:"Skin Ungu", type:"skin", value:"purple", price:150 },
+  { id:"skin_yellow", name:"Skin Kuning", type:"skin", value:"yellow", price:150 },
+  { id:"outfit_explorer", name:"Explorer Outfit", type:"outfit", value:"explorer", price:200 },
+  { id:"outfit_ninja", name:"Ninja Suit", type:"outfit", value:"ninja", price:300 },
+  { id:"outfit_royal", name:"Royal Robe", type:"outfit", value:"royal", price:500 },
+  { id:"outfit_sports", name:"Sports Gear", type:"outfit", value:"sports", price:250 },
+  { id:"hair_spiky", name:"Spiky Hair", type:"hair", value:"spiky", price:150 },
+  { id:"hair_cap", name:"Cap Hat", type:"hair", value:"cap", price:150 },
+  { id:"accessory_halo", name:"Golden Halo", type:"accessory", value:"halo", price:350 },
+  { id:"accessory_backpack", name:"Backpack", type:"accessory", value:"backpack", price:200 },
+  { id:"effect_rainbow", name:"Rainbow Aura", type:"effect", value:"rainbow", price:700 }
 ];
 
 function buyItem(item){
@@ -2486,8 +3125,7 @@ function showShop(){
     </div>
 
     <p>
-      Semua item tersedia untuk dibeli menggunakan Coins.
-      Tidak ada item yang dikunci berdasarkan level.
+      Item kosmetik karakter. Seluruh block building dasar sudah langsung terbuka & gratis!
     </p>
 
     <div class="cards">
@@ -2524,9 +3162,9 @@ window.shopAction=buyItem;
 function showCharacter(){
 
   const faces=[
-    ["happy","🙂"],
-    ["cool","😎"],
-    ["star","⭐"]
+    ["happy","🙂 Happy"],
+    ["cool","😎 Cool"],
+    ["star","⭐ Star"]
   ];
 
   const skins=[
@@ -2544,7 +3182,7 @@ function showCharacter(){
     </div>
 
     <p>
-      Karakter dapat diubah kapan saja.
+      Sesuaikan penampilan karaktermu.
     </p>
 
     <h3>Wajah</h3>
@@ -2559,7 +3197,7 @@ function showCharacter(){
       `).join("")}
     </div>
 
-    <h3>Skin</h3>
+    <h3>Skin Color</h3>
     <div class="cards">
       ${skins.map(s=>`
         <div class="card">
@@ -2633,8 +3271,6 @@ function showInventory(){
 
 function showQuests(){
 
-  const xpNeeded=xpRequired();
-
   const html=`
     <div class="closeRow">
       <h1>🏆 Aktivitas</h1>
@@ -2643,11 +3279,18 @@ function showQuests(){
 
     <div class="quest">
       <div class="questTop">
+        <strong>🏗️ Builder (Block Ditempatkan)</strong>
+        <span>${state.quests.builder || 0} Block</span>
+      </div>
+    </div>
+
+    <div class="quest">
+      <div class="questTop">
         <strong>🌎 Explorer</strong>
-        <span>${state.quests.explorer}/5</span>
+        <span>${Math.round(state.quests.explorer || 0)}/5</span>
       </div>
       <div class="progress">
-        <div style="width:${Math.min(100,state.quests.explorer/5*100)}%"></div>
+        <div style="width:${Math.min(100,(state.quests.explorer||0)/5*100)}%"></div>
       </div>
     </div>
 
@@ -2661,23 +3304,6 @@ function showQuests(){
       </div>
     </div>
 
-    <div class="quest">
-      <div class="questTop">
-        <strong>💎 Treasure</strong>
-        <span>${state.quests.treasure?"COMPLETED":"AVAILABLE"}</span>
-      </div>
-    </div>
-
-    <div class="quest">
-      <div class="questTop">
-        <strong>⭐ Level</strong>
-        <span>${state.level} / 10</span>
-      </div>
-      <div class="progress">
-        <div style="width:${Math.min(100,state.level/10*100)}%"></div>
-      </div>
-    </div>
-
     <h2>🏅 Achievements</h2>
 
     ${
@@ -2687,7 +3313,7 @@ function showQuests(){
         `<div class="card">${a}</div>`
       ).join("")
       :
-      `<p>Belum ada achievement. Jelajahi dunia!</p>`
+      `<p>Belum ada achievement. Jelajahi dan bangun dunia!</p>`
     }
 
     <h2>⚡ Mini Game</h2>
@@ -2718,8 +3344,7 @@ function showWorld(){
     </div>
 
     <p>
-      Semua wilayah terbuka. Tidak ada level requirement.
-      Teleport ke area mana pun.
+      Semua wilayah terbuka. Teleport ke area mana pun.
     </p>
 
     <div class="cards">
@@ -2775,10 +3400,15 @@ function showSettings(){
     </div>
 
     <div class="card">
-      <h3>Data</h3>
+      <h3>🏗️ Reset Bangunan</h3>
+      <p>Hapus seluruh bangunan buatan sendiri di dunia ini.</p>
+      <button class="danger" onclick="window.resetPlayerBuildings()">🧹 RESET BANGUNAN</button>
+    </div>
+
+    <div class="card">
+      <h3>Data Game</h3>
       <button onclick="window.saveManual()">💾 SIMPAN SEKARANG</button>
-      <button class="danger" onclick="window.resetData()">RESET DATA
-      </button>
+      <button class="danger" onclick="window.resetData()">RESET SELURUH GAME</button>
     </div>
   `;
 
@@ -2821,9 +3451,29 @@ window.saveManual=()=>{
   saveGame(false);
 };
 
+window.resetPlayerBuildings=()=>{
+  if(confirm("Apakah Anda yakin ingin menghapus SEMUA bangunan buatan Anda?\nProgress level, quest, dan coins tidak akan hilang.")){
+    while(playerBuildingsGroup.children.length > 0){
+      const obj = playerBuildingsGroup.children[0];
+      playerBuildingsGroup.remove(obj);
+      obj.traverse(child => {
+        if(child.geometry) child.geometry.dispose();
+        if(child.material) {
+          if(Array.isArray(child.material)) child.material.forEach(m => m.dispose());
+          else child.material.dispose();
+        }
+      });
+    }
+    state.buildings = [];
+    saveGame(false);
+    toast("🧹 Semua bangunan berhasil direset.");
+    showSettings();
+  }
+};
+
 window.resetData=()=>{
 
-  if(confirm("Reset semua progress?")){
+  if(confirm("Reset seluruh progress dan data permainan?")){
 
     localStorage.removeItem(CONFIG.saveKey);
 
@@ -2844,49 +3494,35 @@ function showHow(){
     </div>
 
     <div class="card">
-      <h3>🎮 PC</h3>
+      <h3>🧱 Build Mode</h3>
       <p>
-        WASD / Arrow = bergerak<br>
-        Shift = sprint<br>
-        Space = lompat<br>
-        Mouse = kamera<br>
-        E = interaksi<br>
-        ESC = pause
+        Tekan 🧱 BUILD atau tombol B di keyboard.<br>
+        • Pilih block dari katalog (100% Gratis)<br>
+        • R = Rotasi block 90°<br>
+        • X = Delete mode<br>
+        • Tap/Klik target untuk menempatkan block
       </p>
     </div>
 
     <div class="card">
-      <h3>📱 Mobile</h3>
+      <h3>🎮 PC Controls</h3>
       <p>
-        Joystick kiri = bergerak<br>
-        Geser area kanan = kamera<br>
-        ↑ = lompat<br>
-        ⚡ = sprint<br>
-        ✦ = interaksi
+        WASD = Bergerak<br>
+        Shift = Sprint | Space = Lompat<br>
+        Mouse Wheel = Zoom In / Zoom Out<br>
+        E / Klik = Interaksi / Place Block<br>
+        B = Toggle Build Mode | ESC = Pause
       </p>
     </div>
 
     <div class="card">
-      <h3>🌎 Dunia</h3>
+      <h3>📱 Mobile Controls</h3>
       <p>
-        Semua area langsung terbuka. Tidak ada quest wajib,
-        tidak ada level requirement, dan tidak ada area terkunci.
-      </p>
-    </div>
-
-    <div class="card">
-      <h3>💰 Coins</h3>
-      <p>
-        Kumpulkan coin di seluruh dunia dan gunakan untuk
-        membeli kosmetik karakter.
-      </p>
-    </div>
-
-    <div class="card">
-      <h3>🏗️ Sandbox</h3>
-      <p>
-        Fokus utama game adalah eksplorasi dan kebebasan.
-        Aktivitas hanyalah tambahan, bukan kewajiban.
+        Joystick kiri = Bergerak<br>
+        Area kanan = Geser kamera<br>
+        Pinch 2 jari = Zoom kamera<br>
+        ✦ = Interaksi / Action<br>
+        Toolbar Build = Pilih & atur block
       </p>
     </div>
   `;
@@ -2953,6 +3589,8 @@ function openMainMenu(){
   paused=false;
   miniGameActive=false;
 
+  if(buildMode) toggleBuildMode();
+
   pause.classList.add("hidden");
   panelOverlay.classList.add("hidden");
   dialog.classList.add("hidden");
@@ -2982,9 +3620,14 @@ function startGame(){
     createPlayer();
   }
 
-  toast("🎮 Selamat bermain!");
+  toast("🎮 Selamat bermain di BLOCKVERSE!");
 
   clock.getDelta();
+}
+
+function startBuildModeMenu(){
+  startGame();
+  if(!buildMode) toggleBuildMode();
 }
 
 /* =========================================================
@@ -3011,7 +3654,6 @@ function startCoinRush(){
 
   miniGame.classList.remove("hidden");
 
-  /* respawn Fun Park coins */
   for(const c of coins){
 
     if(c.area==="park"){
@@ -3086,26 +3728,6 @@ function checkDaily(){
   }
 }
 
-function claimDaily(){
-
-  checkDaily();
-
-  if(state.daily.claimed){
-
-    toast("🎁 Reward hari ini sudah diambil.");
-    return;
-  }
-
-  state.daily.claimed=true;
-
-  addCoins(100);
-  addXP(25);
-
-  toast("🎁 Daily Reward +100 Coins");
-
-  scheduleSave();
-}
-
 /* =========================================================
    HUD
 ========================================================= */
@@ -3114,9 +3736,6 @@ function updateHUD(){
 
   $("coinText").textContent=state.coins;
   $("levelText").textContent=state.level;
-
-  $("xpText").textContent=
-    `${state.xp} / ${xpRequired()}`;
 }
 
 /* =========================================================
@@ -3141,10 +3760,11 @@ function toast(text){
 }
 
 /* =========================================================
-   BUTTON EVENTS
+   BUTTON EVENTS & BINDINGS
 ========================================================= */
 
 $("playBtn").onclick=startGame;
+$("buildMenuBtn").onclick=startBuildModeMenu;
 
 $("characterBtn").onclick=showCharacter;
 
@@ -3174,6 +3794,19 @@ $("dialogClose").onclick=closeDialog;
 
 $("dialogOk").onclick=closeDialog;
 
+$("buildToggleBtn").onclick=toggleBuildMode;
+
+/* BUILD TOOLBAR BINDINGS */
+$("bBlocksBtn").onclick=showBlockPalette;
+$("bPlaceBtn").onclick=()=>setBuildSubMode("PLACE");
+$("bDeleteBtn").onclick=()=>setBuildSubMode("DELETE");
+$("bRotateBtn").onclick=rotateBlock;
+$("bPickBtn").onclick=()=>setBuildSubMode("SELECT");
+$("bZoomInBtn").onclick=()=>zoomCamera(-2);
+$("bZoomOutBtn").onclick=()=>zoomCamera(2);
+$("bSaveBtn").onclick=()=>saveGame(false);
+$("bExitBtn").onclick=toggleBuildMode;
+
 /* =========================================================
    RESIZE
 ========================================================= */
@@ -3190,7 +3823,7 @@ window.addEventListener("resize",()=>{
 });
 
 /* =========================================================
-   VISIBILITY
+   VISIBILITY & UNLOAD
 ========================================================= */
 
 document.addEventListener("visibilitychange",()=>{
@@ -3202,10 +3835,6 @@ document.addEventListener("visibilitychange",()=>{
     saveGame(true);
   }
 });
-
-/* =========================================================
-   SAVE BEFORE LEAVE
-========================================================= */
 
 window.addEventListener("beforeunload",()=>{
 
@@ -3237,22 +3866,24 @@ function update(dt){
   updateArea();
   updateAchievements();
 
+  if (buildMode) {
+    updateGhostRaycast();
+  }
+
   state.position={
     x:player.position.x,
     y:player.position.y,
     z:player.position.z
   };
 
-  /* explorer progress */
   if(currentArea!=="spawn"){
     state.quests.explorer=
       Math.min(
         5,
-        state.quests.explorer+dt*.015
+        (state.quests.explorer||0)+dt*.015
       );
   }
 
-  /* NPC idle animation */
   for(const n of npcs){
 
     n.group.rotation.y+=dt*.15;
@@ -3264,7 +3895,6 @@ function update(dt){
     n.group.position.y=bob;
   }
 
-  /* portal animation */
   for(const p of portals){
 
     p.group.rotation.y+=dt*.8;
@@ -3293,22 +3923,21 @@ function loop(){
 }
 
 /* =========================================================
-   LOADING
+   BOOTSTRAP
 ========================================================= */
 
 async function boot(){
 
   const steps=[
-    "Menyiapkan renderer...",
+    "Menyiapkan renderer 3D...",
     "Membangun Spawn City...",
     "Membangun Green Valley...",
     "Membangun Crystal Cave...",
     "Membangun Sky Island...",
     "Membangun Fun Park...",
-    "Menempatkan NPC...",
-    "Menempatkan coin...",
-    "Menyiapkan karakter...",
-    "Memuat progress..."
+    "Memuat sistem kuis & NPC...",
+    "Inisialisasi Build System...",
+    "Memuat progress & bangunan..."
   ];
 
   for(let i=0;i<steps.length;i++){
@@ -3318,19 +3947,19 @@ async function boot(){
     progress.style.width=
       ((i+1)/steps.length*100)+"%";
 
-    await new Promise(r=>setTimeout(r,70));
+    await new Promise(r=>setTimeout(r,60));
   }
 
   createWorld();
   createPlayer();
+  initGhostPreview();
 
   checkDaily();
   updateHUD();
 
-  /* daily reward is intentionally not auto-claimed */
-  loadingText.textContent="Selesai!";
+  loadingText.textContent="Siap!";
 
-  await new Promise(r=>setTimeout(r,250));
+  await new Promise(r=>setTimeout(r,200));
 
   loading.classList.add("hidden");
 
@@ -3340,13 +3969,7 @@ async function boot(){
 boot();
 
 /* =========================================================
-   DAILY REWARD HOTKEY / EASY ACCESS
-========================================================= */
-
-window.claimDaily=claimDaily;
-
-/* =========================================================
-   DEBUG / SAFETY
+   SAFETY HANDLER
 ========================================================= */
 
 window.addEventListener("error",e=>{
