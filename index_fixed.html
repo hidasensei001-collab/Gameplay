@@ -1,0 +1,3431 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#07111f">
+<title>BLOCKVERSE — Open World Adventure</title>
+
+<style>
+*{
+  box-sizing:border-box;
+  -webkit-tap-highlight-color:transparent;
+  user-select:none;
+}
+html,body{
+  margin:0;
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  background:#07111f;
+  font-family:Arial,Helvetica,sans-serif;
+  color:#fff;
+}
+canvas{
+  display:block;
+  width:100%;
+  height:100%;
+  touch-action:none;
+}
+button{
+  font:inherit;
+  color:white;
+  border:0;
+  cursor:pointer;
+}
+.hidden{display:none!important}
+
+/* LOADING */
+#loading{
+  position:fixed;
+  inset:0;
+  z-index:1000;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  background:
+    radial-gradient(circle at 50% 25%,#243b68 0,#101c35 35%,#050a13 100%);
+}
+.logo{
+  font-size:clamp(38px,10vw,78px);
+  font-weight:1000;
+  letter-spacing:-4px;
+  text-shadow:0 7px 0 #111,0 0 35px rgba(80,180,255,.6);
+}
+.logo span{color:#62d9ff}
+.loadingText{
+  margin-top:10px;
+  opacity:.7;
+  font-size:14px;
+}
+.loadingBar{
+  width:min(330px,75vw);
+  height:8px;
+  margin-top:24px;
+  border-radius:20px;
+  background:#18253c;
+  overflow:hidden;
+}
+#loadingProgress{
+  height:100%;
+  width:0%;
+  background:linear-gradient(90deg,#4de1ff,#a96cff,#ffde59);
+  transition:width .2s;
+}
+
+/* HUD */
+#hud{
+  position:fixed;
+  inset:0;
+  z-index:20;
+  pointer-events:none;
+}
+.topbar{
+  position:absolute;
+  top:max(12px,env(safe-area-inset-top));
+  left:12px;
+  right:12px;
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+}
+.stats{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.stat{
+  background:rgba(5,12,24,.78);
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:15px;
+  padding:8px 12px;
+  backdrop-filter:blur(10px);
+  box-shadow:0 6px 25px rgba(0,0,0,.2);
+}
+.stat small{
+  display:block;
+  opacity:.55;
+  font-size:9px;
+  text-transform:uppercase;
+}
+.stat strong{
+  font-size:15px;
+}
+.menuBtn{
+  pointer-events:auto;
+  width:44px;
+  height:44px;
+  border-radius:14px;
+  background:rgba(5,12,24,.82);
+  border:1px solid rgba(255,255,255,.14);
+  font-size:20px;
+}
+#areaName{
+  position:absolute;
+  left:50%;
+  top:75px;
+  transform:translateX(-50%);
+  padding:8px 16px;
+  border-radius:30px;
+  background:rgba(5,12,24,.55);
+  backdrop-filter:blur(8px);
+  font-weight:800;
+  font-size:13px;
+  opacity:.9;
+}
+#hint{
+  position:absolute;
+  left:50%;
+  bottom:105px;
+  transform:translateX(-50%);
+  padding:9px 15px;
+  border-radius:30px;
+  background:rgba(0,0,0,.62);
+  font-size:12px;
+  white-space:nowrap;
+}
+
+/* MOBILE */
+#mobile{
+  position:fixed;
+  inset:0;
+  z-index:30;
+  pointer-events:none;
+}
+#joystick{
+  position:absolute;
+  left:20px;
+  bottom:max(25px,env(safe-area-inset-bottom));
+  width:125px;
+  height:125px;
+  border-radius:50%;
+  background:rgba(255,255,255,.09);
+  border:2px solid rgba(255,255,255,.14);
+  pointer-events:auto;
+  touch-action:none;
+}
+#stick{
+  position:absolute;
+  width:58px;
+  height:58px;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  border-radius:50%;
+  background:rgba(255,255,255,.25);
+  border:2px solid rgba(255,255,255,.3);
+}
+.mobileButtons{
+  position:absolute;
+  right:18px;
+  bottom:max(25px,env(safe-area-inset-bottom));
+  display:flex;
+  align-items:flex-end;
+  gap:10px;
+}
+.mBtn{
+  width:60px;
+  height:60px;
+  border-radius:20px;
+  background:rgba(5,12,24,.78);
+  border:1px solid rgba(255,255,255,.16);
+  box-shadow:0 8px 25px rgba(0,0,0,.2);
+  font-size:22px;
+  pointer-events:auto;
+  touch-action:none;
+}
+.mBtn.big{
+  width:76px;
+  height:76px;
+  border-radius:25px;
+  font-size:28px;
+}
+#cameraZone{
+  position:absolute;
+  top:0;
+  right:0;
+  width:56%;
+  height:70%;
+  pointer-events:auto;
+  touch-action:none;
+}
+
+/* MENU / PANELS */
+.overlay{
+  position:fixed;
+  inset:0;
+  z-index:100;
+  background:rgba(2,6,14,.72);
+  backdrop-filter:blur(16px);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+}
+.panel{
+  width:min(760px,96vw);
+  max-height:88vh;
+  overflow:auto;
+  background:linear-gradient(145deg,rgba(18,31,55,.98),rgba(7,15,28,.98));
+  border:1px solid rgba(255,255,255,.13);
+  border-radius:28px;
+  padding:24px;
+  box-shadow:0 30px 100px rgba(0,0,0,.55);
+}
+.panel::-webkit-scrollbar{width:5px}
+.panel::-webkit-scrollbar-thumb{
+  background:#344562;
+  border-radius:20px;
+}
+.panel h1{
+  margin:0 0 7px;
+  font-size:30px;
+}
+.panel p{
+  color:#aebbd0;
+  line-height:1.5;
+}
+.menuLogo{
+  text-align:center;
+  margin:10px 0 22px;
+}
+.menuLogo .logo{
+  font-size:54px;
+}
+.menuButtons{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:12px;
+}
+.primary,.secondary,.danger{
+  min-height:52px;
+  border-radius:17px;
+  padding:0 18px;
+  font-weight:900;
+}
+.primary{
+  background:linear-gradient(135deg,#347cff,#7758ff);
+  box-shadow:0 8px 25px rgba(72,102,255,.25);
+}
+.secondary{
+  background:#18263d;
+}
+.danger{
+  background:#652938;
+}
+.primary:active,.secondary:active,.danger:active,.mBtn:active{
+  transform:scale(.97);
+}
+.closeRow{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:15px;
+}
+.close{
+  width:40px;
+  height:40px;
+  border-radius:13px;
+  background:#18263d;
+}
+
+/* CARDS */
+.cards{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+  gap:12px;
+}
+.card{
+  background:rgba(255,255,255,.055);
+  border:1px solid rgba(255,255,255,.09);
+  border-radius:18px;
+  padding:15px;
+}
+.card h3{
+  margin:0 0 6px;
+}
+.card small{color:#8e9bb0}
+.card button{
+  width:100%;
+  margin-top:12px;
+  min-height:40px;
+  border-radius:12px;
+  background:#263958;
+}
+.card button.equipped{
+  background:#246c52;
+}
+
+/* DIALOG */
+#dialogText{
+  white-space:pre-line;
+  line-height:1.6;
+}
+
+/* TOAST */
+#toast{
+  position:fixed;
+  left:50%;
+  bottom:155px;
+  transform:translateX(-50%) translateY(15px);
+  z-index:300;
+  background:rgba(4,10,20,.92);
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:16px;
+  padding:11px 17px;
+  opacity:0;
+  transition:.25s;
+  pointer-events:none;
+  box-shadow:0 10px 35px rgba(0,0,0,.35);
+}
+#toast.show{
+  opacity:1;
+  transform:translateX(-50%) translateY(0);
+}
+
+/* QUEST */
+.quest{
+  margin:10px 0;
+  padding:14px;
+  background:rgba(255,255,255,.045);
+  border-radius:16px;
+}
+.questTop{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+}
+.progress{
+  height:7px;
+  margin-top:9px;
+  background:#18253a;
+  border-radius:10px;
+  overflow:hidden;
+}
+.progress div{
+  height:100%;
+  width:0;
+  background:linear-gradient(90deg,#42e8ad,#4ca5ff);
+}
+
+/* MINI GAME */
+#miniGame{
+  position:fixed;
+  inset:0;
+  z-index:200;
+  background:rgba(0,0,0,.62);
+  pointer-events:none;
+}
+#miniInfo{
+  position:absolute;
+  top:90px;
+  left:50%;
+  transform:translateX(-50%);
+  background:rgba(4,10,20,.85);
+  border-radius:20px;
+  padding:12px 22px;
+  text-align:center;
+}
+#miniInfo strong{
+  display:block;
+  font-size:24px;
+}
+#miniInfo small{opacity:.6}
+
+/* RESPONSIVE */
+@media(max-width:600px){
+  .panel{
+    border-radius:22px;
+    padding:18px;
+  }
+  .menuButtons{
+    grid-template-columns:1fr;
+  }
+  .stat{
+    padding:7px 9px;
+  }
+  #hint{
+    bottom:115px;
+    max-width:80vw;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+}
+/* BUILD MODE UI */
+#buildHud{position:fixed;left:50%;bottom:max(14px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:45;width:min(980px,96vw);display:none;pointer-events:none}
+#buildHud.active{display:block}.buildBar{pointer-events:auto;display:flex;gap:7px;padding:8px;border-radius:22px;overflow:auto;scrollbar-width:none;background:rgba(5,12,24,.88);border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(16px);box-shadow:0 12px 45px rgba(0,0,0,.35)}.buildBar::-webkit-scrollbar{display:none}
+.buildBtn{flex:0 0 auto;min-width:62px;height:54px;padding:5px 9px;border-radius:15px;background:#18263d;border:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:18px;font-weight:900}.buildBtn small{font-size:9px;opacity:.7}.buildBtn.active{background:linear-gradient(135deg,#347cff,#7758ff)}
+#buildBlocksPanel{position:fixed;left:50%;bottom:86px;transform:translateX(-50%);z-index:46;width:min(860px,94vw);max-height:min(55vh,520px);overflow:auto;display:none;padding:14px;border-radius:24px;background:rgba(7,15,28,.96);border:1px solid rgba(255,255,255,.13);backdrop-filter:blur(18px);box-shadow:0 25px 80px rgba(0,0,0,.5);pointer-events:auto}#buildBlocksPanel.show{display:block}
+.buildCategory{margin-bottom:12px}.buildCategory h3{margin:0 0 8px;font-size:12px;opacity:.7;text-transform:uppercase}.buildGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(86px,1fr));gap:7px}.blockChoice{min-height:72px;border-radius:15px;padding:7px;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px}.blockChoice.active{border-color:#62d9ff;box-shadow:0 0 0 2px rgba(98,217,255,.18)}.blockSwatch{width:30px;height:30px;border-radius:8px;border:1px solid rgba(255,255,255,.2)}.blockChoice span{font-size:10px;font-weight:800;text-align:center}
+#buildInfo{position:fixed;top:82px;left:50%;transform:translateX(-50%);z-index:44;display:none;padding:8px 13px;border-radius:18px;font-size:11px;background:rgba(5,12,24,.78);border:1px solid rgba(98,217,255,.28);backdrop-filter:blur(10px);pointer-events:none;white-space:nowrap}#buildInfo.show{display:block}
+#buildModeBtn{position:fixed;right:18px;top:calc(72px + env(safe-area-inset-top));z-index:44;display:none;min-width:74px;height:52px;padding:0 12px;border-radius:17px;background:linear-gradient(135deg,#347cff,#7758ff);font-weight:1000;box-shadow:0 10px 30px rgba(55,85,255,.28);pointer-events:auto}#buildModeBtn.show{display:block}
+#buildZoom{position:fixed;right:18px;bottom:calc(118px + env(safe-area-inset-bottom));z-index:44;display:none;gap:7px;pointer-events:auto}#buildZoom.show{display:flex}#buildZoom button{width:48px;height:48px;border-radius:15px;background:rgba(5,12,24,.84);border:1px solid rgba(255,255,255,.14);font-size:22px}
+#buildSelection{position:fixed;top:calc(135px + env(safe-area-inset-top));right:14px;z-index:47;width:min(260px,80vw);display:none;padding:13px;border-radius:18px;background:rgba(7,15,28,.94);border:1px solid rgba(255,255,255,.13);backdrop-filter:blur(15px);pointer-events:auto}#buildSelection.show{display:block}#buildSelection strong{display:block;font-size:13px;margin-bottom:5px}#buildSelection small{display:block;opacity:.65;line-height:1.5;white-space:pre-line}.selectionActions{display:flex;gap:6px;margin-top:9px}.selectionActions button{flex:1;min-height:38px;border-radius:11px;background:#263958;font-weight:900;font-size:11px}.selectionActions .deleteAction{background:#652938}
+@media(max-width:600px){#buildModeBtn{top:calc(12px + env(safe-area-inset-top));right:12px}#buildInfo{top:calc(66px + env(safe-area-inset-top));max-width:88vw;overflow:hidden;text-overflow:ellipsis}#buildHud{bottom:calc(8px + env(safe-area-inset-bottom));width:98vw}.buildBtn{min-width:58px;height:50px}#buildBlocksPanel{bottom:72px;max-height:50vh}#buildSelection{top:auto;bottom:calc(72px + env(safe-area-inset-bottom));right:8px}#buildZoom{right:10px;bottom:calc(132px + env(safe-area-inset-bottom))}}
+
+
+#buildQuick{position:fixed;left:50%;bottom:calc(78px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:47;display:none;gap:6px;pointer-events:auto;flex-wrap:wrap;justify-content:center;width:min(900px,96vw)}
+#buildQuick.show{display:flex}.buildQ{height:34px;padding:0 11px;border-radius:12px;background:rgba(5,12,24,.9);border:1px solid rgba(255,255,255,.12);font-size:10px;font-weight:900}.buildQ.active{background:#286fbd}
+#blueprintPanel.show{display:block}
+#blueprintPanel{position:fixed;right:14px;top:135px;z-index:48;width:min(390px,92vw);max-height:55vh;overflow:auto;display:none;padding:14px;border-radius:20px;background:rgba(7,15,28,.97);border:1px solid rgba(255,255,255,.13);backdrop-filter:blur(18px);pointer-events:auto}.bpCard{display:grid;grid-template-columns:36px 1fr auto auto;gap:7px;align-items:center;padding:8px;border-radius:13px;background:rgba(255,255,255,.05);margin-top:7px}.bpCard small{display:block;opacity:.6}.bpCard button{border-radius:9px;background:#263958;padding:7px;font-size:10px;font-weight:900}.bpIcon{font-size:24px}.muted{opacity:.6;font-size:12px}.climbActive{background:#2f9d74!important}
+#selectionBox{position:fixed;z-index:55;border:2px dashed #62d9ff;background:rgba(98,217,255,.08);display:none;pointer-events:none}
+@media(max-width:600px){#buildQuick{bottom:calc(68px + env(safe-area-inset-bottom));width:98vw}.buildQ{height:31px;padding:0 8px;font-size:9px}#blueprintPanel{top:auto;bottom:calc(70px + env(safe-area-inset-bottom));right:8px;max-height:48vh}}
+</style>
+</head>
+
+<body>
+
+<div id="loading">
+  <div class="logo">BLOCK<span>VERSE</span></div>
+  <div class="loadingText" id="loadingText">Membangun dunia...</div>
+  <div class="loadingBar">
+    <div id="loadingProgress"></div>
+  </div>
+</div>
+
+<div id="hud" class="hidden">
+  <div class="topbar">
+    <div class="stats">
+      <div class="stat">
+        <small>Coins</small>
+        <strong id="coinText">0</strong>
+      </div>
+      <div class="stat">
+        <small>Level</small>
+        <strong id="levelText">1</strong>
+      </div>
+      <div class="stat">
+        <small>XP</small>
+        <strong id="xpText">0 / 100</strong>
+      </div>
+    </div>
+    <button class="menuBtn" id="openMenu">☰</button>
+  </div>
+
+  <div id="areaName">Spawn City</div>
+  <div id="hint">Jelajahi dunia dan lakukan apa saja!</div>
+</div>
+
+<div id="mobile" class="hidden">
+  <div id="cameraZone"></div>
+
+  <div id="joystick">
+    <div id="stick"></div>
+  </div>
+
+  <div class="mobileButtons">
+    <button class="mBtn" id="sprintBtn">⚡</button>
+    <button class="mBtn" id="actionBtn">✦</button><button class="mBtn" id="climbBtn">🧗</button>
+    <button class="mBtn big" id="jumpBtn">↑</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+<!-- BUILD MODE UI -->
+<button id="buildModeBtn">🧱 BUILD</button>
+<div id="buildInfo">🧱 Build Mode — Pilih block → arahkan kamera → PLACE</div>
+<div id="buildZoom"><button id="buildZoomOut">−</button><button id="buildZoomIn">＋</button></div>
+<div id="buildQuick"><button class="buildQ" id="freeformToggle">FREEFORM</button><button class="buildQ" id="dragPaintToggle">PAINT</button><button class="buildQ" id="mirrorToggle">MIRROR</button><button class="buildQ" id="mirrorAxisBtn">AXIS X</button><button class="buildQ" id="mirrorPivotBtn">PIVOT</button><button class="buildQ" id="blueprintBtn">📐 BLUEPRINT</button></div>
+<div id="blueprintPanel"><div class="closeRow"><h1 style="font-size:20px">📐 Blueprint Library</h1><button class="close" id="closeBlueprintPanel">✕</button></div><button class="primary" id="saveBlueprintBtn">SAVE AS BLUEPRINT</button><div id="blueprintContent"></div></div>
+<div id="selectionBox"></div>
+<div id="buildBlocksPanel"><div class="closeRow"><h1 style="font-size:20px">🧱 Block Library</h1><button class="close" id="closeBlocksPanel">✕</button></div><div id="buildBlocksContent"></div></div>
+<div id="buildSelection"><strong id="selectionTitle">Block</strong><small id="selectionDetails">Pilih block buatan pemain.</small><div class="selectionActions"><button id="selectionRotate">↻ ROTATE</button><button id="selectionCopy">📋 COPY</button><button id="selectionDelete" class="deleteAction">🗑 DELETE</button></div></div>
+<div id="buildHud"><div class="buildBar">
+<button class="buildBtn" id="blocksTool">🧱<small>BLOCKS</small></button><button class="buildBtn active" id="selectTool">🖐<small>SELECT</small></button><button class="buildBtn" id="placeTool">➕<small>PLACE</small></button><button class="buildBtn" id="deleteTool">🗑<small>DELETE</small></button><button class="buildBtn" id="rotateTool">↻<small>ROTATE</small></button><button class="buildBtn" id="copyTool">📋<small>COPY</small></button><button class="buildBtn" id="stampTool">📐<small>STAMP</small></button><button class="buildBtn" id="undoTool">↶<small>UNDO</small></button><button class="buildBtn" id="redoTool">↷<small>REDO</small></button><button class="buildBtn" id="saveBuildTool">💾<small>SAVE</small></button><button class="buildBtn" id="exitBuildTool">🌎<small>EXIT</small></button>
+</div></div>
+
+<!-- MAIN MENU -->
+<div id="menu" class="overlay">
+  <div class="panel">
+    <div class="menuLogo">
+      <div class="logo">BLOCK<span>VERSE</span></div>
+      <p>Open World • Build • Explore • Play</p>
+    </div>
+
+    <div class="menuButtons">
+      <button class="primary" id="playBtn">▶ MULAI BERMAIN</button>
+      <button class="secondary" id="characterBtn">👤 KARAKTER</button>
+      <button class="secondary" id="shopBtn">🛒 SHOP</button>
+      <button class="secondary" id="inventoryBtn">🎒 INVENTORY</button>
+      <button class="secondary" id="worldBtn">🌎 DUNIA</button>
+      <button class="secondary" id="questsBtn">🏆 AKTIVITAS</button>
+      <button class="secondary" id="settingsBtn">⚙ PENGATURAN</button>
+      <button class="secondary" id="howBtn">机制 CARA BERMAIN</button>
+    </div>
+
+    <p style="text-align:center;font-size:11px;margin-top:20px">
+      Progress tersimpan otomatis di perangkat.
+    </p>
+  </div>
+</div>
+
+<!-- GENERAL PANEL -->
+<div id="panelOverlay" class="overlay hidden">
+  <div class="panel" id="panelContent"></div>
+</div>
+
+<!-- DIALOG -->
+<div id="dialog" class="overlay hidden">
+  <div class="panel">
+    <div class="closeRow">
+      <h1 id="dialogTitle">Dialog</h1>
+      <button class="close" id="dialogClose">✕</button>
+    </div>
+    <p id="dialogText"></p>
+    <button class="primary" id="dialogOk">OKE</button>
+  </div>
+</div>
+
+<!-- PAUSE -->
+<div id="pause" class="overlay hidden">
+  <div class="panel">
+    <h1>⏸ PAUSE</h1>
+    <p>Permainan dijeda.</p>
+    <div class="menuButtons">
+      <button class="primary" id="resumeBtn">▶ LANJUT</button>
+      <button class="secondary" id="pauseSaveBtn">💾 SIMPAN</button>
+      <button class="secondary" id="pauseMenuBtn">⌂ MENU UTAMA</button>
+    </div>
+  </div>
+</div>
+
+<!-- MINI GAME -->
+<div id="miniGame" class="hidden">
+  <div id="miniInfo">
+    <small>COIN RUSH</small>
+    <strong id="miniTimer">30</strong>
+    <div>Coins: <span id="miniScore">0</span></div>
+  </div>
+</div>
+
+<script type="importmap">
+{
+  "imports":{
+    "three":"https://cdn.jsdelivr.net/npm/three@0.185.1/build/three.module.js"
+  }
+}
+</script>
+
+<script type="module">
+
+import * as THREE from "three";
+
+/* =========================================================
+   CONFIG
+========================================================= */
+
+const CONFIG = {
+  worldSize:260,
+  gravity:25,
+  walkSpeed:7,
+  sprintSpeed:12,
+  jumpForce:10.5,
+  saveKey:"blockverse_open_world_v3",
+  maxDPR:1.5,
+  coinValue:10,
+  buildGrid:1,
+  minCameraDistance:3.5,
+  maxCameraDistance:35
+};
+
+/* =========================================================
+   STATE
+========================================================= */
+
+const DEFAULT_STATE = {
+  version:5,
+
+  coins:0,
+  xp:0,
+  level:1,
+
+  position:{x:0,y:1.1,z:8},
+
+  customization:{
+    skin:"blue",
+    outfit:"classic",
+    hair:"none",
+    accessory:"none",
+    face:"happy",
+    effect:"none"
+  },
+
+  inventory:[
+    "skin_blue",
+    "outfit_classic",
+    "face_happy"
+  ],
+
+  unlockedAreas:[
+    "spawn",
+    "valley",
+    "cave",
+    "sky",
+    "park",
+    "creative_flatland",
+    "cliff",
+    "monolith"
+  ],
+
+  quests:{
+    explorer:0,
+    collector:0,
+    builder:0,
+    treasure:false
+  },
+
+  achievements:[],
+
+  daily:{
+    date:"",
+    claimed:false
+  },
+
+  settings:{
+    quality:"medium",
+    sound:true
+  },
+
+  buildings:[],
+  blueprints:[],
+  buildSeq:0,
+  buildSettings:{freeform:false,dragPaint:true,mirror:false,mirrorAxis:"X",mirrorDelete:true,pivot:{x:0,z:0}},
+
+  checkpoint:{
+    area:"spawn",
+    x:0,
+    y:1.1,
+    z:8
+  }
+};
+
+let state = structuredClone(DEFAULT_STATE);
+
+/* =========================================================
+   BUILD SYSTEM CONFIG
+========================================================= */
+const BUILD_BLOCKS={
+ grass:{name:"Grass",category:"STRUKTUR",color:0x4e9d53,size:[1,1,1]},
+ dirt:{name:"Dirt",category:"STRUKTUR",color:0x8a5a36,size:[1,1,1]},
+ stone:{name:"Stone",category:"STRUKTUR",color:0x7b8795,size:[1,1,1]},
+ sand:{name:"Sand",category:"STRUKTUR",color:0xe5cf8c,size:[1,1,1]},
+ snow:{name:"Snow",category:"STRUKTUR",color:0xf2f7ff,size:[1,1,1]},
+ water:{name:"Water",category:"STRUKTUR",color:0x4aa9e8,size:[1,1,1],transparent:true},
+ wall:{name:"Wall",category:"STRUKTUR",color:0xd9dee8,size:[1,1,1]},
+ floor:{name:"Floor",category:"STRUKTUR",color:0x9b7653,size:[1,.25,1]},
+ ceiling:{name:"Ceiling",category:"STRUKTUR",color:0xbcc5d2,size:[1,.25,1]},
+ roof:{name:"Roof",category:"STRUKTUR",color:0x9f3948,size:[1,.5,1]},
+ glass:{name:"Glass",category:"STRUKTUR",color:0x79d9ff,size:[1,1,.12],transparent:true},
+ door:{name:"Door",category:"MEKANISME",color:0x75452d,size:[.8,2,.2],mechanism:"door"},
+ window:{name:"Window",category:"STRUKTUR",color:0x62cce8,size:[.9,.9,.12],transparent:true},
+ brick:{name:"Brick",category:"STRUKTUR",color:0xb65c4e,size:[1,1,1]},
+ concrete:{name:"Concrete",category:"STRUKTUR",color:0xa9adb5,size:[1,1,1]},
+ wood:{name:"Wood",category:"STRUKTUR",color:0x9b653d,size:[1,1,1]},
+ road:{name:"Road",category:"STRUKTUR",color:0x343b47,size:[1,.12,1]},
+ line:{name:"Road Line",category:"STRUKTUR",color:0xffe15a,size:[.18,.14,1]},
+ sidewalk:{name:"Sidewalk",category:"STRUKTUR",color:0xb8bdc4,size:[1,.18,1]},
+ curb:{name:"Curb",category:"STRUKTUR",color:0x858c96,size:[1,.25,.35]},
+ bridge:{name:"Bridge",category:"STRUKTUR",color:0x6e4d36,size:[1,.5,1]},
+ lamp:{name:"Lamp",category:"DEKORASI",color:0xffd85a,size:[.25,2.5,.25]},
+ fence:{name:"Fence",category:"DEKORASI",color:0x7d573c,size:[1,1,.18]},
+ sign:{name:"Sign",category:"DEKORASI",color:0x4f79b8,size:[.9,1.2,.15]},
+ bench:{name:"Bench",category:"DEKORASI",color:0x805536,size:[1.4,.5,.5]},
+ tree:{name:"Tree",category:"DEKORASI",color:0x2e9d55,size:[1.2,2.5,1.2]},
+ flower:{name:"Flower",category:"DEKORASI",color:0xff6eb4,size:[.35,.5,.35]},
+ bush:{name:"Bush",category:"DEKORASI",color:0x368b4b,size:[1.2,.8,1.2]},
+ rock:{name:"Rock",category:"DEKORASI",color:0x707985,size:[.9,.65,.8]},
+ pole:{name:"Pole",category:"DEKORASI",color:0x626a75,size:[.22,2.5,.22]},
+ stairs:{name:"Stairs",category:"RAMP/TANGGA",color:0x9b7653,size:[1,1,1],climbable:true},
+ ramp:{name:"Ramp",category:"RAMP/TANGGA",color:0x6d819b,size:[1,.7,1],climbable:true},
+ steep_ramp:{name:"Steep Ramp",category:"RAMP/TANGGA",color:0x596f8c,size:[1,1.25,1],climbable:true},
+ ladder:{name:"Ladder",category:"RAMP/TANGGA",color:0xc28a4e,size:[.18,2.5,1],climbable:true,climbType:"ladder"},
+ monkey_bar:{name:"Monkey Bar",category:"RAMP/TANGGA",color:0x6e7787,size:[2.5,.18,.18],climbable:true,climbType:"monkey_bar"},
+ pillar:{name:"Pillar",category:"STRUKTUR",color:0x9aa2ad,size:[.7,2.5,.7]},
+ arch:{name:"Arch",category:"STRUKTUR",color:0xc5a47b,size:[2,2.5,.35]},
+ platform:{name:"Platform",category:"MEKANISME",color:0x4e78c7,size:[2,.3,2],mechanism:"movingPlatform"},
+ trigger_bridge:{name:"Bridge Trigger",category:"MEKANISME",color:0x8b5cff,size:[2,.25,2],mechanism:"triggerBridge"},
+ arena:{name:"Arena Block",category:"STRUKTUR",color:0x714cc4,size:[1,.35,1]}
+};
+const BUILD_CATEGORIES=["STRUKTUR","RAMP/TANGGA","DEKORASI","MEKANISME"];
+const BUILD_CATEGORY_ICONS={STRUKTUR:"🧱","RAMP/TANGGA":"🪜",DEKORASI:"🌳","MEKANISME":"⚙️"};
+
+function isValidBuilding(v){return !!(v&&typeof v==="object"&&typeof v.id==="string"&&BUILD_BLOCKS[v.type]&&[v.x,v.y,v.z,v.rx,v.ry,v.rz].every(Number.isFinite))}
+function normalizeBuilding(v){return {id:String(v.id),type:v.type,x:Number(v.x)||0,y:Number(v.y)||0,z:Number(v.z)||0,rx:Number(v.rx)||0,ry:Number(v.ry)||0,rz:Number(v.rz)||0,sx:Number.isFinite(v.sx)?v.sx:1,sy:Number.isFinite(v.sy)?v.sy:1,sz:Number.isFinite(v.sz)?v.sz:1,freeform:v.freeform===true,collidable:v.freeform===true?false:v.collidable!==false,climbable:v.climbable===true||!!BUILD_BLOCKS[v.type]?.climbable,mechanismActive:v.mechanismActive===true}}
+function normalizeBlueprint(v){
+  if(!v||typeof v!=="object"||typeof v.name!=="string"||!Array.isArray(v.blocks))return null;
+  const blocks=v.blocks.filter(isValidBuilding).map(b=>{const n=normalizeBuilding(b);return {...n,x:Number(b.x)||0,y:Number(b.y)||0,z:Number(b.z)||0};}).slice(0,500);
+  if(!blocks.length)return null;
+  return {id:typeof v.id==="string"?v.id:"bp_"+Date.now().toString(36),name:v.name.slice(0,40)||"Blueprint",blocks,anchor:{x:Number(v.anchor?.x)||0,y:Number(v.anchor?.y)||0,z:Number(v.anchor?.z)||0},createdAt:Number(v.createdAt)||Date.now()};
+}
+
+function normalizeState(raw){
+  const s = structuredClone(DEFAULT_STATE);
+  if(!raw || typeof raw!=="object") return s;
+
+  if(Number.isFinite(raw.coins)) s.coins=Math.max(0,raw.coins);
+  if(Number.isFinite(raw.xp)) s.xp=Math.max(0,raw.xp);
+  if(Number.isFinite(raw.level)) s.level=Math.max(1,raw.level);
+
+  if(raw.position && typeof raw.position==="object"){
+    if(Number.isFinite(raw.position.x)) s.position.x=raw.position.x;
+    if(Number.isFinite(raw.position.y)) s.position.y=raw.position.y;
+    if(Number.isFinite(raw.position.z)) s.position.z=raw.position.z;
+  }
+
+  if(raw.customization && typeof raw.customization==="object"){
+    Object.assign(s.customization,raw.customization);
+  }
+
+  if(Array.isArray(raw.inventory)){
+    s.inventory=[...new Set(raw.inventory.filter(v=>typeof v==="string"))];
+  }
+
+  if(Array.isArray(raw.unlockedAreas)){
+    s.unlockedAreas=[...new Set(raw.unlockedAreas.filter(v=>typeof v==="string"))];
+  }
+
+  if(raw.quests && typeof raw.quests==="object"){
+    Object.assign(s.quests,raw.quests);
+  }
+
+  if(Array.isArray(raw.achievements)){
+    s.achievements=[...new Set(raw.achievements.filter(v=>typeof v==="string"))];
+  }
+
+  if(raw.daily && typeof raw.daily==="object"){
+    Object.assign(s.daily,raw.daily);
+  }
+
+  if(raw.settings && typeof raw.settings==="object"){
+    Object.assign(s.settings,raw.settings);
+  }
+
+  if(raw.checkpoint && typeof raw.checkpoint==="object"){
+    Object.assign(s.checkpoint,raw.checkpoint);
+  }
+  if(Array.isArray(raw.buildings)) s.buildings=raw.buildings.filter(isValidBuilding).map(normalizeBuilding);
+  if(Array.isArray(raw.blueprints)) s.blueprints=raw.blueprints.map(normalizeBlueprint).filter(Boolean).slice(0,50);
+  if(Number.isFinite(raw.buildSeq)) s.buildSeq=Math.max(0,Math.floor(raw.buildSeq));
+  if(raw.buildSettings&&typeof raw.buildSettings==="object"){
+    s.buildSettings.freeform=raw.buildSettings.freeform===true;
+    s.buildSettings.dragPaint=raw.buildSettings.dragPaint!==false;
+    s.buildSettings.mirror=raw.buildSettings.mirror===true;
+    s.buildSettings.mirrorAxis=raw.buildSettings.mirrorAxis==="Z"?"Z":"X";
+    if(raw.buildSettings.pivot&&Number.isFinite(raw.buildSettings.pivot.x)&&Number.isFinite(raw.buildSettings.pivot.z)){s.buildSettings.pivot.x=raw.buildSettings.pivot.x;s.buildSettings.pivot.z=raw.buildSettings.pivot.z;}
+  }
+  s.unlockedAreas=[...new Set([...s.unlockedAreas,"creative_flatland","cliff","monolith"])];
+  s.version=5;
+  return s;
+}
+
+function loadGame(){
+  try{
+    const raw=localStorage.getItem(CONFIG.saveKey);
+    if(raw){
+      state=normalizeState(JSON.parse(raw));
+    }
+  }catch(e){
+    console.warn("Save tidak dapat dibaca",e);
+  }
+}
+
+let saveTimer=null;
+
+function saveGame(silent=true){
+  try{
+    localStorage.setItem(CONFIG.saveKey,JSON.stringify(state));
+    if(!silent) toast("💾 Progress tersimpan");
+  }catch(e){
+    console.warn("Save gagal",e);
+  }
+}
+
+function scheduleSave(){
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(()=>saveGame(true),800);
+}
+
+loadGame();
+
+/* =========================================================
+   DOM ELEMENTS
+========================================================= */
+
+const $=id=>document.getElementById(id);
+
+const loading=$("loading");
+const progress=$("loadingProgress");
+const loadingText=$("loadingText");
+
+const hud=$("hud");
+const mobile=$("mobile");
+const menu=$("menu");
+const panelOverlay=$("panelOverlay");
+const panelContent=$("panelContent");
+const dialog=$("dialog");
+const pause=$("pause");
+const miniGame=$("miniGame");
+
+let gameStarted=false;
+let paused=false;
+let currentArea="spawn";
+
+/* =========================================================
+   THREE CORE
+========================================================= */
+
+let renderer;
+let scene;
+let camera;
+let clock;
+
+const world=new THREE.Group();
+const dynamicWorld=new THREE.Group();
+
+let player;
+let playerVisual;
+
+const coins=[];
+const npcs=[];
+const portals=[];
+const obstacles=[];
+const pickups=[];
+const effects=[];
+
+let velocityY=0;
+let onGround=false;
+
+let camYaw=0;
+let camPitch=.45;
+let camDistance=8;
+
+const keys={};
+
+const moveInput={
+  x:0,
+  y:0
+};
+
+let sprinting=false;
+
+/* =========================================================
+   BUILD SYSTEM RUNTIME & CACHING
+========================================================= */
+let buildMode=false,buildTool="select",selectedBuildType="stone",selectedBuildId=null;
+let ghostBuild=null,groundMesh=null,buildGroup=new THREE.Group(),buildRaycaster=new THREE.Raycaster();
+const terrainMeshes=[];
+const buildMeshes=new Map();
+let buildUndo=[],buildRedo=[],buildRotation=0,buildRotationX=0,buildRotationZ=0,buildSequence=0;
+let buildPointer={x:.5,y:.5};
+let buildPainting=false,paintHistoryStarted=false,paintLastCell=null,paintFrameCount=0;
+let selectedBuildIds=[];
+let selectionBox=null,selectionStart=null,selectionPointerId=null;
+let stampBlueprintId=null,stampRotation=0,stampGhostGroup=null;
+let climbState="NONE",climbTarget=null,manualClimb=false,climbButtonHeld=false;
+let climbCameraPitch=0;
+
+// Cache geometry & materials untuk optimasi performa FPS
+const buildGeoCache = new Map();
+const buildMatCache = new Map();
+
+function getBuildSize(type){return (BUILD_BLOCKS[type]||BUILD_BLOCKS.stone).size.slice()}
+
+function getBuildGeometry(type){
+  const size = getBuildSize(type);
+  const key = size.join('_');
+  if(!buildGeoCache.has(key)){
+    buildGeoCache.set(key, new THREE.BoxGeometry(...size));
+  }
+  return buildGeoCache.get(key);
+}
+
+function buildMaterial(type,ghost=false){
+  const d=BUILD_BLOCKS[type]||BUILD_BLOCKS.stone;
+  const key = `${type}_${ghost?'ghost':'solid'}`;
+  if(!buildMatCache.has(key)){
+    const mat = new THREE.MeshStandardMaterial({
+      color:d.color,
+      roughness:.72,
+      metalness:0,
+      transparent:ghost||!!d.transparent,
+      opacity:ghost?.42:(d.transparent?.42:1),
+      depthWrite:!ghost
+    });
+    buildMatCache.set(key, mat);
+  }
+  return buildMatCache.get(key);
+}
+
+function makeBuildMesh(data,ghost=false){
+  const geo = getBuildGeometry(data.type);
+  const mat = buildMaterial(data.type,ghost);
+  const m = new THREE.Mesh(geo, mat);
+  m.position.set(data.x,data.y,data.z);
+  m.rotation.set(data.rx||0,data.ry||0,data.rz||0);
+  m.scale.set(data.sx||1,data.sy||1,data.sz||1);
+  m.castShadow=!ghost;
+  m.receiveShadow=!ghost;
+  m.userData={isPlayerBuilt:!ghost,buildId:data.id,buildType:data.type,isGhost:ghost,freeform:data.freeform===true,collidable:data.collidable!==false,climbable:data.climbable===true||!!BUILD_BLOCKS[data.type]?.climbable,mechanism:BUILD_BLOCKS[data.type]?.mechanism||null};
+  return m;
+}
+
+function rebuildBuildGroup(){
+  while(buildGroup.children.length){
+    const m=buildGroup.children.pop();
+  }
+  buildMeshes.clear();
+  for(const b of state.buildings){
+    if(!isValidBuilding(b))continue;
+    const m=makeBuildMesh(b);
+    if(b.mechanismActive&&BUILD_BLOCKS[b.type]?.mechanism==="door")m.rotation.y=b.ry+Math.PI/2;
+    if(b.mechanismActive&&BUILD_BLOCKS[b.type]?.mechanism==="movingPlatform")m.position.y=b.y+3;
+    buildGroup.add(m);
+    buildMeshes.set(b.id,m);
+  }
+}
+
+function removeGhost(){
+  if(ghostBuild){
+    scene.remove(ghostBuild);
+    ghostBuild=null;
+  }
+}
+
+function createGhost(){
+  removeGhost();
+  ghostBuild=makeBuildMesh({id:"ghost",type:selectedBuildType,x:0,y:.5,z:0,rx:0,ry:0,rz:0},true);
+  const edge=new THREE.LineSegments(new THREE.EdgesGeometry(ghostBuild.geometry),new THREE.LineBasicMaterial({color:0x62d9ff,transparent:true,opacity:.9}));
+  edge.userData.freeformIndicator=true;ghostBuild.add(edge);
+  scene.add(ghostBuild);
+  ghostBuild.visible=false;
+}
+
+function setBuildPointer(e){
+  const r=renderer.domElement.getBoundingClientRect();
+  buildPointer.x=((e.clientX-r.left)/r.width)*2-1;
+  buildPointer.y=-((e.clientY-r.top)/r.height)*2+1;
+}
+
+function buildTargets(){return [...terrainMeshes,...buildMeshes.values()].filter(Boolean)}
+
+function getPlacementTarget(){
+  buildRaycaster.setFromCamera(buildPointer,camera);
+  const hits=buildRaycaster.intersectObjects(buildTargets(),false);
+  if(!hits.length)return null;
+  const hit=hits[0],n=hit.face?.normal?.clone()||new THREE.Vector3(0,1,0),[w,h,d]=getBuildSize(selectedBuildType);
+  let x=hit.point.x,y=hit.point.y,z=hit.point.z;
+  if(hit.object===groundMesh||Math.abs(n.y)>.5)y=hit.point.y+h/2;
+  else{x+=n.x*w/2;y+=n.y*h/2;z+=n.z*d/2}
+  if(state.buildSettings.freeform){return {x,y,z,rx:buildRotationX,ry:buildRotation,rz:buildRotationZ,freeform:true,collidable:false};}
+  const snap=v=>Math.round(v/CONFIG.buildGrid)*CONFIG.buildGrid;
+  return {x:snap(x),y:snap(y),z:snap(z),rx:0,ry:buildRotation,rz:0,freeform:false,collidable:true};
+}
+
+function updateGhost(){
+  if(!buildMode||!(["place","copy"].includes(buildTool)||buildTool==="stamp"))return;
+  if(buildTool==="stamp"){updateStampGhost();return}
+  if(!ghostBuild)createGhost();
+  const t=getPlacementTarget();
+  if(!t){ghostBuild.visible=false;return}
+  ghostBuild.visible=true;
+  ghostBuild.position.set(t.x,t.y,t.z);
+  ghostBuild.rotation.set(t.rx||0,t.ry||0,t.rz||0);
+  if(state.buildSettings.freeform){ghostBuild.material=buildMaterial(selectedBuildType,true);const edge=ghostBuild.children.find(v=>v.userData.freeformIndicator);if(edge)edge.material.color.set(0xffb84d)}else{const edge=ghostBuild.children.find(v=>v.userData.freeformIndicator);if(edge)edge.material.color.set(0x62d9ff)}
+}
+
+function nextBuildId(){
+  buildSequence=Math.max(buildSequence+1,(state.buildSeq||0)+1);
+  state.buildSeq=buildSequence;
+  return "block_"+Date.now().toString(36)+"_"+buildSequence.toString(36);
+}
+
+function findBuilding(id){return state.buildings.find(b=>b.id===id)||null}
+
+function pushBuildHistory(){
+  buildUndo.push(JSON.stringify(state.buildings));
+  if(buildUndo.length>60)buildUndo.shift();
+  buildRedo.length=0;
+}
+
+function restoreBuildingsSnapshot(json){
+  try{
+    const a=JSON.parse(json);
+    if(!Array.isArray(a))return;
+    state.buildings=a.filter(isValidBuilding).map(normalizeBuilding);
+    rebuildBuildGroup();
+    selectedBuildId=null;
+    hideSelection();
+    scheduleSave();
+  }catch(e){console.warn("Undo gagal",e)}
+}
+
+function undoBuild(){
+  if(!buildUndo.length){toast("↶ Tidak ada perubahan.");return}
+  buildRedo.push(JSON.stringify(state.buildings));
+  restoreBuildingsSnapshot(buildUndo.pop());
+  toast("↶ Undo");
+}
+
+function redoBuild(){
+  if(!buildRedo.length){toast("↷ Tidak ada perubahan.");return}
+  buildUndo.push(JSON.stringify(state.buildings));
+  restoreBuildingsSnapshot(buildRedo.pop());
+  toast("↷ Redo");
+}
+
+function addBuildingRuntime(b){
+  const m=makeBuildMesh(b);
+  buildGroup.add(m);buildMeshes.set(b.id,m);
+  return m;
+}
+
+function mirrorBuildingData(b){
+  const p=state.buildSettings.pivot||{x:0,z:0};
+  const m={...b,id:nextBuildId()};
+  if(state.buildSettings.mirrorAxis==="Z"){m.z=2*p.z-b.z;m.rx=-b.rx;m.ry=-b.ry;}
+  else{m.x=2*p.x-b.x;m.ry=-b.ry;m.rz=-b.rz;}
+  return m;
+}
+
+function placeBuilding(type=selectedBuildType,pos=null,source=null,options={}){
+  if(!buildMode)return;
+  const t=pos||getPlacementTarget();
+  if(!t){if(!options.silent)toast("Arahkan kamera ke tanah atau block.");return null}
+  if(options.history!==false)pushBuildHistory();
+  const b={id:nextBuildId(),type,x:t.x,y:t.y,z:t.z,rx:source?.rx??t.rx??buildRotationX,ry:source?.ry??t.ry??buildRotation,rz:source?.rz??t.rz??buildRotationZ,sx:source?.sx??1,sy:source?.sy??1,sz:source?.sz??1,freeform:source?.freeform??t.freeform??state.buildSettings.freeform,collidable:source?.collidable??t.collidable??!state.buildSettings.freeform,climbable:!!BUILD_BLOCKS[type]?.climbable,mechanismActive:false};
+  state.buildings.push(b);addBuildingRuntime(b);selectedBuildId=b.id;selectedBuildIds=[b.id];
+  state.quests.builder=Math.min(100,(state.quests.builder||0)+1);
+  if(state.buildSettings.mirror&&!options.skipMirror){const twin=mirrorBuildingData(b);state.buildings.push(twin);addBuildingRuntime(twin);selectedBuildIds.push(twin.id);}
+  if(!options.noSave)scheduleSave();
+  updateSelection();
+  if(!options.silent)toast("🧱 Block ditempatkan • GRATIS • UNLIMITED");
+  return b;
+}
+
+function pickBuildAtPointer(){
+  buildRaycaster.setFromCamera(buildPointer,camera);
+  const h=buildRaycaster.intersectObjects([...buildMeshes.values()],false);
+  return h[0]?.object||null;
+}
+
+function deleteBuildingById(id,options={}){
+  const b=findBuilding(id);if(!b)return;
+  const m=buildMeshes.get(id);
+  state.buildings=state.buildings.filter(v=>v.id!==id);
+  if(m){buildGroup.remove(m);buildMeshes.delete(id);}
+  if(state.buildSettings.mirror&&state.buildSettings.mirrorDelete&&!options.skipMirror){
+    const twin=findMirrorTwin(b);if(twin)deleteBuildingById(twin.id,{skipMirror:true});
+  }
+}
+function findMirrorTwin(b){
+  const p=state.buildSettings.pivot||{x:0,z:0};
+  return state.buildings.find(v=>v.id!==b.id&&v.type===b.type&&Math.abs(v.x-(state.buildSettings.mirrorAxis==="X"?2*p.x-b.x:v.x))<.01&&Math.abs(v.z-(state.buildSettings.mirrorAxis==="Z"?2*p.z-b.z:v.z))<.01&&Math.abs(v.y-b.y)<.01)||null;
+}
+
+function deleteSelectedBuilding(){
+  const ids=selectedBuildIds.length?selectedBuildIds:(selectedBuildId?[selectedBuildId]:[]);
+  if(!ids.length){toast("Pilih block buatan pemain.");return}
+  pushBuildHistory();ids.slice().forEach(id=>deleteBuildingById(id));
+  selectedBuildId=null;selectedBuildIds=[];hideSelection();scheduleSave();toast("🗑 Block dihapus");
+}
+
+function rotateSelectedBuilding(){
+  const ids=selectedBuildIds.length?selectedBuildIds:(selectedBuildId?[selectedBuildId]:[]);
+  if(!ids.length){toast("Pilih block buatan pemain.");return}
+  pushBuildHistory();
+  for(const id of ids){const b=findBuilding(id);if(!b)continue;b.ry=(b.ry+Math.PI/2)%(Math.PI*2);const m=buildMeshes.get(id);if(m)m.rotation.y=b.ry;}
+  scheduleSave();updateSelection();toast("↻ Rotasi 90°");
+}
+
+function duplicateSelectedBuilding(){
+  const b=findBuilding(selectedBuildId);
+  if(!b){toast("Pilih block untuk disalin.");return}
+  const p={x:b.x+1,y:b.y,z:b.z+1,rx:b.rx,ry:b.ry,rz:b.rz,freeform:b.freeform,collidable:b.collidable};
+  placeBuilding(b.type,p,b);
+}
+
+function showSelection(){$("buildSelection").classList.add("show")}
+function hideSelection(){$("buildSelection").classList.remove("show")}
+function updateSelection(){
+  if(selectedBuildIds.length>1){
+    $("selectionTitle").textContent=`${selectedBuildIds.length} BLOCK TERPILIH`;
+    $("selectionDetails").textContent="Seleksi multi aktif. Simpan sebagai Blueprint atau hapus/putar bersama.";showSelection();return;
+  }
+  const b=findBuilding(selectedBuildId);
+  if(!b){hideSelection();return}
+  const d=BUILD_BLOCKS[b.type];
+  const deg=(Math.round((b.ry||0)*180/Math.PI)%360+360)%360;
+  $("selectionTitle").textContent=d.name.toUpperCase();
+  $("selectionDetails").textContent=`Position X: ${b.x.toFixed(1)}  Y: ${b.y.toFixed(1)}  Z: ${b.z.toFixed(1)}\nRotation Y ${deg}° • ${b.freeform?"FREEFORM • VISUAL ONLY":"GRID • SOLID"}`;showSelection();
+}
+
+function setBuildTool(t){
+  buildTool=t;
+  document.querySelectorAll(".buildBtn").forEach(b=>b.classList.remove("active"));
+  const ids={select:"selectTool",place:"placeTool",delete:"deleteTool",rotate:"rotateTool",copy:"copyTool",stamp:"stampTool"};
+  ids[t]&&$(ids[t])?.classList.add("active");
+  if(t==="place"||t==="copy")createGhost();
+  else removeGhost();
+  updateBuildInfo();
+}
+
+function updateBuildInfo(){
+  if(!buildMode){$("buildInfo").classList.remove("show");return}
+  $("buildInfo").classList.add("show");
+  $("buildInfo").textContent=({select:"🖐 SELECT — pilih block buatan pemain",place:"➕ PLACE — pilih block lalu arahkan kamera",delete:"🗑 DELETE — pilih block buatan pemain",rotate:"↻ ROTATE — pilih block untuk putar 90°",copy:"📋 COPY — pilih block untuk menggandakannya"})[buildTool];
+}
+
+function toggleBuildMode(force=null){
+  if(!gameStarted||paused)return;
+  buildMode=force===null?!buildMode:!!force;
+  cameraZone.style.pointerEvents=buildMode?"none":"auto";
+  $("buildHud").classList.toggle("active",buildMode);
+  $("buildQuick").classList.toggle("show",buildMode);
+  $("buildZoom").classList.toggle("show",buildMode);
+  $("buildBlocksPanel").classList.remove("show");
+  if(buildMode){
+    $("buildModeBtn").textContent="🧱 BUILD ✓";
+    updateBuildToggles();
+    renderBlueprintLibrary();
+    setBuildTool("select");
+    toast("🧱 Build Mode aktif — semua block GRATIS & UNLIMITED");
+  }else{
+    $("buildModeBtn").textContent="🧱 BUILD";
+    removeGhost();
+    if(stampGhostGroup){scene.remove(stampGhostGroup);stampGhostGroup=null;}
+    hideSelection();
+    toast("🌎 Explore Mode");
+  }
+  updateBuildInfo();
+}
+
+function renderBuildLibrary(){
+  const html=BUILD_CATEGORIES.map(cat=>{
+    const items=Object.entries(BUILD_BLOCKS).filter(([,d])=>d.category===cat);
+    return `<div class="buildCategory"><h3>${BUILD_CATEGORY_ICONS[cat]} ${cat} • FREE</h3><div class="buildGrid">${items.map(([id,d])=>`<button class="blockChoice ${id===selectedBuildType?"active":""}" data-build-type="${id}"><i class="blockSwatch" style="background:#${d.color.toString(16).padStart(6,"0")}"></i><span>${d.name}</span></button>`).join("")}</div></div>`
+  }).join("");
+  $("buildBlocksContent").innerHTML=html;
+  document.querySelectorAll("[data-build-type]").forEach(b=>b.onclick=()=>{
+    selectedBuildType=b.dataset.buildType;
+    renderBuildLibrary();
+    if(buildTool==="place"||buildTool==="copy")createGhost();
+    toast("🧱 "+BUILD_BLOCKS[selectedBuildType].name+" dipilih • GRATIS");
+  });
+}
+
+function createBlueprintFromSelection(){
+  const ids=selectedBuildIds.length?selectedBuildIds:(selectedBuildId?[selectedBuildId]:[]);
+  const blocks=ids.map(findBuilding).filter(Boolean);
+  if(!blocks.length){toast("Pilih beberapa block terlebih dahulu.");return}
+  const anchor=blocks[0];
+  const bp={id:"bp_"+Date.now().toString(36),name:`Blueprint ${state.blueprints.length+1}`,anchor:{x:anchor.x,y:anchor.y,z:anchor.z},blocks:blocks.map(b=>({...b,x:b.x-anchor.x,y:b.y-anchor.y,z:b.z-anchor.z})),createdAt:Date.now()};
+  state.blueprints.unshift(bp);state.blueprints=state.blueprints.slice(0,50);scheduleSave();renderBlueprintLibrary();toast("📐 Blueprint tersimpan: "+bp.name);
+}
+function deleteBlueprint(id){state.blueprints=state.blueprints.filter(b=>b.id!==id);if(stampBlueprintId===id)stampBlueprintId=null;scheduleSave();renderBlueprintLibrary()}
+function selectBlueprint(id){stampBlueprintId=id;stampRotation=0;setBuildTool("stamp");renderBlueprintLibrary();createStampGhost();}
+function getBlueprint(id){return state.blueprints.find(b=>b.id===id)||null}
+function makeStampGhost(){
+  if(stampGhostGroup){scene.remove(stampGhostGroup);stampGhostGroup=null;}
+  const bp=getBlueprint(stampBlueprintId);if(!bp)return null;
+  stampGhostGroup=new THREE.Group();
+  for(const b0 of bp.blocks){const b={...b0,id:"ghost",x:b0.x,y:b0.y,z:b0.z};const m=makeBuildMesh(b,true);m.userData.isGhost=true;stampGhostGroup.add(m);}
+  scene.add(stampGhostGroup);return stampGhostGroup;
+}
+function createStampGhost(){if(!stampGhostGroup)makeStampGhost();updateStampGhost()}
+function updateStampGhost(){
+  const bp=getBlueprint(stampBlueprintId);if(!bp){if(stampGhostGroup){scene.remove(stampGhostGroup);stampGhostGroup=null;}return}
+  if(!stampGhostGroup)makeStampGhost();
+  buildRaycaster.setFromCamera(buildPointer,camera);
+  const hits=buildRaycaster.intersectObjects(terrainMeshes,false);
+  if(!hits.length){stampGhostGroup.visible=false;return}
+  stampGhostGroup.visible=true;
+  const anchor=hits[0].point;stampGhostGroup.position.set(Math.round(anchor.x),Math.round(anchor.y),Math.round(anchor.z));stampGhostGroup.rotation.y=stampRotation;
+}
+function stampBlueprint(){
+  const bp=getBlueprint(stampBlueprintId);if(!bp||!stampGhostGroup||!stampGhostGroup.visible){toast("Pilih blueprint dan arahkan ke permukaan.");return}
+  pushBuildHistory();const c=Math.cos(stampRotation),s=Math.sin(stampRotation);
+  for(const b0 of bp.blocks){
+    const x=b0.x*c-b0.z*s,y=b0.y,z=b0.x*s+b0.z*c;
+    const pos={x:stampGhostGroup.position.x+x,y:stampGhostGroup.position.y+y,z:stampGhostGroup.position.z+z,rx:b0.rx,ry:b0.ry+stampRotation,rz:b0.rz,freeform:b0.freeform,collidable:b0.collidable};
+    placeBuilding(b0.type,pos,b0,{history:false,silent:true,noSave:true,skipMirror:true});
+  }
+  scheduleSave();toast("📐 Blueprint di-stamp • "+bp.blocks.length+" block");
+}
+function renderBlueprintLibrary(){
+  const el=$("blueprintContent");if(!el)return;
+  el.innerHTML=state.blueprints.length?state.blueprints.map(bp=>`<div class="bpCard"><div class="bpIcon">▦</div><div><strong>${bp.name}</strong><small>${bp.blocks.length} block</small></div><button data-stamp="${bp.id}">STAMP</button><button data-delbp="${bp.id}">✕</button></div>`).join(""):`<p class="muted">Belum ada blueprint. Multi-select block lalu pilih SAVE BLUEPRINT.</p>`;
+  el.querySelectorAll("[data-stamp]").forEach(b=>b.onclick=()=>selectBlueprint(b.dataset.stamp));el.querySelectorAll("[data-delbp]").forEach(b=>b.onclick=()=>deleteBlueprint(b.dataset.delbp));
+}
+function setBuildPivot(){state.buildSettings.pivot={x:player.position.x,z:player.position.z};scheduleSave();toast(`🎯 Pivot mirror: ${player.position.x.toFixed(1)}, ${player.position.z.toFixed(1)}`)}
+function toggleFreeform(){state.buildSettings.freeform=!state.buildSettings.freeform;toast(state.buildSettings.freeform?"🌀 FREEFORM ON • block visual, NON-COLLIDABLE":"🧱 GRID ON • block solid");updateBuildToggles();setBuildTool(buildTool)}
+function toggleDragPaint(){state.buildSettings.dragPaint=!state.buildSettings.dragPaint;updateBuildToggles();toast("🖌 Drag-to-paint "+(state.buildSettings.dragPaint?"ON":"OFF"))}
+function toggleMirror(){state.buildSettings.mirror=!state.buildSettings.mirror;updateBuildToggles();toast("🪞 Mirror "+(state.buildSettings.mirror?"ON":"OFF"))}
+function cycleMirrorAxis(){state.buildSettings.mirrorAxis=state.buildSettings.mirrorAxis==="X"?"Z":"X";updateBuildToggles();toast("🪞 Mirror axis "+state.buildSettings.mirrorAxis)}
+function updateBuildToggles(){
+  const set=(id,text,on)=>{const e=$(id);if(e){e.textContent=text+(on?" ✓":"");e.classList.toggle("active",!!on)}};
+  set("freeformToggle","FREEFORM",state.buildSettings.freeform);set("dragPaintToggle","PAINT",state.buildSettings.dragPaint);set("mirrorToggle","MIRROR",state.buildSettings.mirror);
+  const a=$("mirrorAxisBtn");if(a)a.textContent="AXIS "+state.buildSettings.mirrorAxis;
+}
+function paintAtPointer(){
+  if(!state.buildSettings.dragPaint||!buildMode||buildTool!=="place")return;
+  const t=getPlacementTarget();if(!t)return;
+  const cell=state.buildSettings.freeform?`${t.x.toFixed(2)}|${t.y.toFixed(2)}|${t.z.toFixed(2)}`:`${Math.round(t.x)}|${Math.round(t.y)}|${Math.round(t.z)}`;
+  if(cell===paintLastCell)return;paintLastCell=cell;
+  if(!paintHistoryStarted){pushBuildHistory();paintHistoryStarted=true;}
+  placeBuilding(selectedBuildType,t,null,{history:false,silent:true,noSave:true});paintFrameCount++;
+  if(paintFrameCount>=4)paintFrameCount=0;
+}
+
+function saveBuildWorld(){
+  if(player)state.position={x:player.position.x,y:player.position.y,z:player.position.z};
+  saveGame(false);
+  toast("💾 Dunia berhasil disimpan!");
+}
+
+function resetPlayerBuildings(){
+  if(!state.buildings.length){toast("Tidak ada bangunan pemain.");return}
+  if(!confirm("Hapus SEMUA bangunan yang dibuat pemain? Progress, player, quest, coin, dan dunia bawaan tetap aman."))return;
+  pushBuildHistory();
+  state.buildings=[];
+  rebuildBuildGroup();
+  selectedBuildId=null;
+  hideSelection();
+  scheduleSave();
+  toast("🗑 Semua bangunan pemain dihapus");
+}
+
+/* =========================================================
+   RENDERER
+========================================================= */
+
+function createRenderer(){
+  try{
+    renderer=new THREE.WebGLRenderer({
+      antialias:true,
+      powerPreference:"high-performance"
+    });
+
+    renderer.setPixelRatio(
+      Math.min(window.devicePixelRatio||1,CONFIG.maxDPR)
+    );
+
+    renderer.setSize(innerWidth,innerHeight);
+    renderer.shadowMap.enabled=true;
+    renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+    renderer.outputColorSpace=THREE.SRGBColorSpace;
+
+    document.body.appendChild(renderer.domElement);
+
+  }catch(e){
+    loadingText.textContent="Browser tidak mendukung WebGL.";
+    throw e;
+  }
+}
+
+createRenderer();
+
+scene=new THREE.Scene();
+scene.background=new THREE.Color("#8ed9ff");
+scene.fog=new THREE.Fog("#8ed9ff",65,145);
+
+camera=new THREE.PerspectiveCamera(
+  60,
+  innerWidth/innerHeight,
+  .1,
+  250
+);
+
+clock=new THREE.Clock();
+
+scene.add(world);
+world.add(dynamicWorld);
+
+/* =========================================================
+   LIGHTING
+========================================================= */
+
+const hemi=new THREE.HemisphereLight(0xdff5ff,0x526040,2.2);
+scene.add(hemi);
+
+const sun=new THREE.DirectionalLight(0xffffff,3);
+sun.position.set(45,70,35);
+sun.castShadow=true;
+
+sun.shadow.mapSize.set(1024,1024);
+sun.shadow.camera.left=-90;
+sun.shadow.camera.right=90;
+sun.shadow.camera.top=90;
+sun.shadow.camera.bottom=-90;
+
+scene.add(sun);
+
+/* =========================================================
+   MATERIAL & PRIMITIVE HELPERS
+========================================================= */
+
+const mats={};
+
+function mat(color,opts={}){
+  const key=color+JSON.stringify(opts);
+  if(mats[key]) return mats[key];
+
+  mats[key]=new THREE.MeshStandardMaterial({
+    color,
+    roughness:opts.roughness??.8,
+    metalness:opts.metalness??0
+  });
+
+  return mats[key];
+}
+
+function box(w,h,d,color,x=0,y=0,z=0){
+  const mesh=new THREE.Mesh(
+    new THREE.BoxGeometry(w,h,d),
+    mat(color)
+  );
+
+  mesh.position.set(x,y,z);
+  mesh.castShadow=true;
+  mesh.receiveShadow=true;
+  world.add(mesh);
+  return mesh;
+}
+
+function cylinder(r,h,color,x=0,y=0,z=0){
+  const mesh=new THREE.Mesh(
+    new THREE.CylinderGeometry(r,r,h,12),
+    mat(color)
+  );
+
+  mesh.position.set(x,y,z);
+  mesh.castShadow=true;
+  mesh.receiveShadow=true;
+  world.add(mesh);
+  return mesh;
+}
+
+/* =========================================================
+   WORLD CLEARING & BASE GENERATION
+========================================================= */
+
+function clearWorld(){
+  while(world.children.length){
+    const child=world.children[world.children.length-1];
+    if(child===dynamicWorld) break;
+    world.remove(child);
+    child.traverse(obj=>{
+      if(obj.geometry) obj.geometry.dispose();
+    });
+  }
+
+  while(dynamicWorld.children.length){
+    const child=dynamicWorld.children[0];
+    dynamicWorld.remove(child);
+  }
+
+  coins.length=0;
+  npcs.length=0;
+  portals.length=0;
+  obstacles.length=0;
+  pickups.length=0;
+  effects.length=0;
+}
+
+function addGround(){
+  const ground=box(
+    CONFIG.worldSize,
+    1,
+    CONFIG.worldSize,
+    0x4e9d53,
+    0,
+    -.5,
+    0
+  );
+
+  ground.userData.isWorldTerrain=true;
+  groundMesh=ground;
+  terrainMeshes.length=0;
+  terrainMeshes.push(ground);
+  ground.receiveShadow=true;
+}
+
+function addRoad(x,z,w,d){
+  box(w, .08, d, 0x424b5a, x, .04, z);
+}
+
+function addTree(x,z,scale=1){
+  cylinder(.5*scale, 3*scale, 0x75482e, x, 1.5*scale, z);
+
+  const crown=new THREE.Mesh(
+    new THREE.DodecahedronGeometry(2.2*scale),
+    mat(0x2e9d55)
+  );
+
+  crown.position.set(x,4*scale,z);
+  crown.castShadow=true;
+  world.add(crown);
+
+  obstacles.push({
+    x,z,
+    radius:1.1*scale
+  });
+}
+
+function addHouse(x,z,color=0xe9edf3){
+  box(7,4,7,color,x,2,z);
+  box(8,1.5,8,0xb63d4c,x,4.6,z);
+  box(1.4,2.4,.2,0x75452d,x,1.2,z-3.6);
+
+  obstacles.push({
+    x,z,
+    radius:4.5
+  });
+}
+
+function addMountain(x,z,r=7,h=12){
+  const m=new THREE.Mesh(
+    new THREE.ConeGeometry(r,h,8),
+    mat(0x68798c)
+  );
+
+  m.position.set(x,h/2,z);
+  m.castShadow=true;
+  m.receiveShadow=true;
+  world.add(m);
+
+  // Daftarkan gunung ke sistem collision agar pemain tidak menembus gunung
+  obstacles.push({
+    x,z,
+    radius:r*0.75
+  });
+}
+
+/* =========================================================
+   COINS
+========================================================= */
+
+function addCoin(x,y,z,value=10,area="spawn"){
+  const mesh=new THREE.Mesh(
+    new THREE.CylinderGeometry(.42,.42,.12,16),
+    mat(0xffd84d,{metalness:.45,roughness:.25})
+  );
+
+  mesh.rotation.z=Math.PI/2;
+  mesh.position.set(x,y,z);
+  mesh.castShadow=true;
+
+  dynamicWorld.add(mesh);
+
+  const obj={
+    mesh,
+    x,
+    y,
+    z,
+    value,
+    area,
+    collected:false
+  };
+
+  mesh.userData.coin=obj;
+  coins.push(obj);
+}
+
+function createCoins(){
+  const areas=[
+    ["spawn",0,0],
+    ["valley",-45,-5],
+    ["cave",45,18],
+    ["sky",0,62],
+    ["park",45,-48]
+  ];
+
+  for(const [area,cx,cz] of areas){
+    for(let i=0;i<18;i++){
+      const a=(i/18)*Math.PI*2;
+      const r=6+(i%4)*2;
+
+      addCoin(
+        cx+Math.cos(a)*r,
+        area==="sky"?19.5:1,
+        cz+Math.sin(a)*r,
+        10,
+        area
+      );
+    }
+  }
+}
+
+/* =========================================================
+   PORTALS & AREAS
+========================================================= */
+
+const AREA_DATA={
+  spawn:{
+    name:"Spawn City",
+    x:0,z:0,
+    color:0x5aa9ff
+  },
+  valley:{
+    name:"Green Valley",
+    x:-45,z:-5,
+    color:0x51e58a
+  },
+  cave:{
+    name:"Crystal Cave",
+    x:45,z:18,
+    color:0x9f71ff
+  },
+  sky:{
+    name:"Sky Island",
+    x:0,z:62,
+    color:0x53dfff
+  },
+  park:{
+    name:"Fun Park",
+    x:45,z:-48,
+    color:0xff65bd
+  },
+  creative_flatland:{name:"Creative Flatland",x:75,z:65,color:0x69d6a1},
+  cliff:{name:"Grand Multi-Ledge Cliff",x:-92,z:62,color:0xd18b5b},
+  monolith:{name:"Stone Monolith",x:88,z:-82,color:0x9b8cff}
+};
+
+function addPortal(area,x,z){
+  const data=AREA_DATA[area];
+  const g=new THREE.Group();
+
+  const outer=new THREE.Mesh(
+    new THREE.TorusGeometry(2.1,.25,10,32),
+    mat(data.color,{emissive:data.color})
+  );
+  outer.rotation.x=Math.PI/2;
+
+  const core=new THREE.Mesh(
+    new THREE.CircleGeometry(1.75,32),
+    new THREE.MeshBasicMaterial({
+      color:data.color,
+      transparent:true,
+      opacity:.22,
+      side:THREE.DoubleSide
+    })
+  );
+  core.rotation.x=Math.PI/2;
+
+  g.add(outer,core);
+  g.position.set(x,2,z);
+
+  dynamicWorld.add(g);
+
+  portals.push({
+    group:g,
+    area,
+    x,
+    z
+  });
+}
+
+/* =========================================================
+   NPC
+========================================================= */
+
+function addNPC(name,x,z,color,role){
+  const g=new THREE.Group();
+
+  const body=new THREE.Mesh(
+    new THREE.BoxGeometry(1.3,1.8,1),
+    mat(color)
+  );
+  body.position.y=1.7;
+
+  const head=new THREE.Mesh(
+    new THREE.BoxGeometry(1.25,1.25,1.25),
+    mat(0xf0c49a)
+  );
+  head.position.y=3.15;
+
+  g.add(body,head);
+  g.position.set(x,0,z);
+
+  g.userData={name,role};
+
+  dynamicWorld.add(g);
+
+  npcs.push({
+    group:g,
+    name,
+    role,
+    baseY:0
+  });
+}
+
+/* =========================================================
+   WORLD INITIALIZATION
+========================================================= */
+
+function createWorld(){
+  clearWorld();
+  addGround();
+
+  /* Spawn */
+  addRoad(0,0,130,8);
+  addRoad(0,0,8,130);
+
+  addHouse(-12,-12,0xe9edf3);
+  addHouse(12,-12,0xffe0b2);
+  addHouse(-12,12,0xd7eaff);
+  addHouse(12,12,0xffd5dc);
+
+  /* Valley */
+  for(let i=0;i<20;i++){
+    addTree(
+      -70+Math.random()*48,
+      -30+Math.random()*50,
+      .8+Math.random()*.5
+    );
+  }
+
+  for(let i=0;i<5;i++){
+    addMountain(
+      -70+Math.random()*35,
+      -50+Math.random()*90,
+      7+Math.random()*5,
+      12+Math.random()*10
+    );
+  }
+
+  /* Cave entrance */
+  for(let i=0;i<8;i++){
+    addMountain(
+      45+(i%4)*4,
+      18+Math.floor(i/4)*7,
+      4,
+      9
+    );
+  }
+
+  box(16,2,12,0x26314a,45,1,18);
+
+  /* Fun Park */
+  addRoad(45,-48,45,5);
+
+  for(let i=0;i<8;i++){
+    const angle=i*Math.PI/4;
+    const x=45+Math.cos(angle)*12;
+    const z=-48+Math.sin(angle)*12;
+
+    cylinder(.8,7,0x3d6be0,x,3.5,z);
+
+    const top=new THREE.Mesh(
+      new THREE.SphereGeometry(2.5,12,8),
+      mat(i%2?0xff66b8:0xffdf58)
+    );
+    top.position.set(x,7.2,z);
+    top.castShadow=true;
+    world.add(top);
+  }
+
+  /* Sky Island */
+  const island=new THREE.Mesh(
+    new THREE.CylinderGeometry(22,16,3,8),
+    mat(0x68b7ff)
+  );
+  island.position.set(0,17,62);
+  island.castShadow=true;
+  island.receiveShadow=true;
+  island.userData.isWorldTerrain=true;
+  terrainMeshes.push(island);
+
+  world.add(island);
+
+  for(let i=0;i<12;i++){
+    const a=i*Math.PI*2/12;
+    addTree(
+      Math.cos(a)*12,
+      62+Math.sin(a)*12,
+      .65
+    );
+  }
+
+  /* Creative Flatland — dataran luas, rata, tanpa obstacle/NPC/quest */
+  box(78,.5,78,0x5dbb72,75,-.25,65);
+  for(let x=42;x<=108;x+=6){ addRoad(x,65,.08,78); }
+  for(let z=32;z<=98;z+=6){ addRoad(75,z,78,.08); }
+
+  /* Grand Multi-Ledge Cliff — jalur panjat bertingkat */
+  for(let i=0;i<7;i++){
+    const h=3+i*3;
+    box(22, h, 8, 0x725d52, -92, h/2, 42+i*6);
+    box(14,.7,10,0x8c6b55,-92,h+0.35,39+i*6);
+  }
+  for(let i=0;i<8;i++) addTree(-105+(i%2)*4,38+i*6,.55);
+
+  /* Stone Monolith — menara batu raksasa dengan jalur spiral bertingkat */
+  const monolithSteps=22;
+  for(let i=0;i<monolithSteps;i++){
+    const a=i*.52, r=10-i*.12, y=1.2+i*2.25;
+    box(5,2,5,0x625f72,88+Math.cos(a)*r,y, -82+Math.sin(a)*r);
+  }
+  addMountain(88,-82,9,46);
+  // Lubang visual di depan agar jalur spiral tetap mudah dibaca
+  for(let i=0;i<12;i++){ const a=i*.52,r=8.8-i*.12,y=2+i*2.25; cylinder(.5,1.8,0xb38a68,88+Math.cos(a)*r,y,-82+Math.sin(a)*r); }
+
+  /* Portals */
+  addPortal("spawn",0,8);
+  addPortal("valley",-45,8);
+  addPortal("cave",45,8);
+  addPortal("sky",0,48);
+  addPortal("park",45,-35);
+
+  /* NPCs */
+  addNPC("Maya",5,5,0xff6b9c,"Guide");
+  addNPC("Rafi",-8,5,0x54c7ff,"Builder");
+  addNPC("Luna",40,-43,0xa979ff,"Fun Park");
+
+  createCoins();
+  createTreasureSwitch();
+
+  buildGroup=new THREE.Group();
+  buildGroup.name="PLAYER_BUILDINGS";
+  dynamicWorld.add(buildGroup);
+  rebuildBuildGroup();
+
+  updateArea("spawn");
+}
+
+/* =========================================================
+   SECRET TREASURE
+========================================================= */
+
+let treasureSwitch;
+
+function createTreasureSwitch(){
+  treasureSwitch=new THREE.Group();
+
+  const base=new THREE.Mesh(
+    new THREE.BoxGeometry(1.6,.4,1.6),
+    mat(0x343d4f)
+  );
+
+  const button=new THREE.Mesh(
+    new THREE.BoxGeometry(.6,.7,.6),
+    mat(0xff4e70,{emissive:0xff204f})
+  );
+
+  base.position.y=.2;
+  button.position.y=.75;
+
+  treasureSwitch.add(base,button);
+  treasureSwitch.position.set(-20,.0,25);
+
+  dynamicWorld.add(treasureSwitch);
+}
+
+/* =========================================================
+   PLAYER CREATION
+========================================================= */
+
+function createPlayer(){
+  if(player){
+    scene.remove(player);
+  }
+
+  player=new THREE.Group();
+  playerVisual=new THREE.Group();
+
+  player.add(playerVisual);
+
+  const c=state.customization;
+
+  const skinColors={
+    blue:0x4da3ff,
+    red:0xff5b61,
+    green:0x48d597,
+    purple:0xa974ff,
+    yellow:0xffd64d
+  };
+
+  const outfitColors={
+    classic:0x347cff,
+    explorer:0x7b5438,
+    ninja:0x252b3a,
+    royal:0x873bba,
+    sports:0xff5b58
+  };
+
+  const body=new THREE.Mesh(
+    new THREE.BoxGeometry(1.2,1.6,.8),
+    mat(outfitColors[c.outfit]||outfitColors.classic)
+  );
+  body.position.y=1.65;
+
+  const head=new THREE.Mesh(
+    new THREE.BoxGeometry(1.25,1.25,1.25),
+    mat(skinColors[c.skin]||skinColors.blue)
+  );
+  head.position.y=3.05;
+
+  const leg1=new THREE.Mesh(
+    new THREE.BoxGeometry(.48,1.2,.55),
+    mat(0x26344e)
+  );
+  const leg2=leg1.clone();
+
+  leg1.position.set(-.32,.6,0);
+  leg2.position.set(.32,.6,0);
+
+  const arm1=new THREE.Mesh(
+    new THREE.BoxGeometry(.45,1.35,.55),
+    mat(outfitColors[c.outfit]||outfitColors.classic)
+  );
+  const arm2=arm1.clone();
+
+  arm1.position.set(-.85,1.7,0);
+  arm2.position.set(.85,1.7,0);
+
+  playerVisual.add(
+    body,
+    head,
+    leg1,
+    leg2,
+    arm1,
+    arm2
+  );
+
+  /* Face */
+  if(c.face==="cool"){
+    const glasses=new THREE.Mesh(
+      new THREE.BoxGeometry(1.1,.23,.12),
+      mat(0x151923)
+    );
+    glasses.position.set(0,3.1,-.64);
+    playerVisual.add(glasses);
+  }else if(c.face==="star"){
+    const star=new THREE.Mesh(
+      new THREE.OctahedronGeometry(.18),
+      mat(0xffdf3e,{emissive:0xffc400})
+    );
+    star.position.set(0,3.65,-.67);
+    playerVisual.add(star);
+  }
+
+  /* Hair */
+  if(c.hair==="spiky"){
+    for(let i=-1;i<=1;i++){
+      const h=new THREE.Mesh(
+        new THREE.ConeGeometry(.18,.7,5),
+        mat(0x3b241c)
+      );
+      h.position.set(i*.28,3.8,0);
+      playerVisual.add(h);
+    }
+  }else if(c.hair==="cap"){
+    const cap=new THREE.Mesh(
+      new THREE.BoxGeometry(1.35,.35,1.35),
+      mat(0x1e2b52)
+    );
+    cap.position.y=3.75;
+    playerVisual.add(cap);
+  }
+
+  /* Accessories */
+  if(c.accessory==="halo"){
+    const halo=new THREE.Mesh(
+      new THREE.TorusGeometry(.8,.09,8,24),
+      mat(0xffdf55,{emissive:0xffb800})
+    );
+    halo.rotation.x=Math.PI/2;
+    halo.position.y=4;
+    playerVisual.add(halo);
+  }
+
+  if(c.accessory==="backpack"){
+    const pack=new THREE.Mesh(
+      new THREE.BoxGeometry(.75,1,.3),
+      mat(0x243247)
+    );
+    pack.position.set(0,1.8,.55);
+    playerVisual.add(pack);
+  }
+
+  if(c.effect==="rainbow"){
+    const ring=new THREE.Mesh(
+      new THREE.TorusGeometry(1.15,.07,8,32),
+      new THREE.MeshBasicMaterial({color:0xffffff})
+    );
+    ring.rotation.x=Math.PI/2;
+    ring.position.y=2;
+    playerVisual.add(ring);
+    player.userData.rainbow=ring;
+  }
+
+  player.position.set(
+    state.position.x,
+    state.position.y,
+    state.position.z
+  );
+
+  scene.add(player);
+}
+
+/* =========================================================
+   AREA & TERRAIN DETECT
+========================================================= */
+
+function getAreaAt(x,z){
+  const areas=[
+    ["valley",-45,-5,35],
+    ["cave",45,18,30],
+    ["park",45,-48,30],
+    ["sky",0,62,23],
+    ["creative_flatland",75,65,42],
+    ["cliff",-92,62,35],
+    ["monolith",88,-82,32]
+  ];
+
+  for(const [id,cx,cz,r] of areas){
+    const dx=x-cx;
+    const dz=z-cz;
+    if(dx*dx+dz*dz<r*r){
+      return id;
+    }
+  }
+  return "spawn";
+}
+
+function staticStructureHeight(x,z){
+  let h=0;
+  // Creative Flatland tetap benar-benar rata
+  if(x>=36&&x<=114&&z>=26&&z<=104)h=.0;
+  // Teras tebing: bagian depan setiap ledge dapat dipijak
+  for(let i=0;i<7;i++){const top=3+i*3;const cz=42+i*6;if(x>-103&&x<-81&&z>cz-5&&z<cz+5)h=Math.max(h,top);}
+  // Pijakan spiral monolith, sesuai posisi tangga batu yang dibangkitkan
+  for(let i=0;i<22;i++){const a=i*.52,r=10-i*.12,cx=88+Math.cos(a)*r,cz=-82+Math.sin(a)*r;if(Math.hypot(x-cx,z-cz)<3)h=Math.max(h,1.2+i*2.25+1);}
+  return h;
+}
+
+function terrainHeight(x,z){
+  const staticH=staticStructureHeight(x,z);
+  const dx=x;
+  const dz=z-62;
+  if(dx*dx+dz*dz<=20*20){
+    return Math.max(18.5,staticH); // Ketinggian Sky Island
+  }
+  return staticH; // Ketinggian struktur statis
+
+}
+
+function updateArea(force=null){
+  const id=force||getAreaAt(player.position.x,player.position.z);
+  if(id!==currentArea){
+    currentArea=id;
+    toast("📍 "+AREA_DATA[id].name);
+  }
+  $("areaName").textContent=AREA_DATA[currentArea].name;
+}
+
+/* =========================================================
+   ADVANCED AABB COLLISION & STAND HEIGHT SYSTEM
+========================================================= */
+
+const PLAYER_RADIUS = 0.55;
+const PLAYER_HEIGHT = 1.8;
+const MAX_STEP_UP = 0.6; // Tinggi maksimal undakan/anak tangga yang bisa dipanjat otomatis
+
+function getBuildingAABB(b){
+  const [w, h, d] = getBuildSize(b.type);
+  const sx = b.sx || 1, sy = b.sy || 1, sz = b.sz || 1;
+  const hw = (w * sx) / 2;
+  const hh = (h * sy) / 2;
+  const hd = (d * sz) / 2;
+  return {
+    minX: b.x - hw, maxX: b.x + hw,
+    minY: b.y - hh, maxY: b.y + hh,
+    minZ: b.z - hd, maxZ: b.z + hd,
+    topY: b.y + hh
+  };
+}
+
+// Menghitung tinggi pijakan kaki (termasuk tanah dasar & block pemain)
+function getGroundHeight(px, py, pz){
+  let highestGround = terrainHeight(px, pz);
+
+  for(const b of state.buildings){
+    if(b.freeform===true || b.collidable===false) continue;
+    const box = getBuildingAABB(b);
+    // Cek apakah proyeksi XZ pemain bersentuhan dengan block
+    if(px + PLAYER_RADIUS > box.minX && px - PLAYER_RADIUS < box.maxX &&
+       pz + PLAYER_RADIUS > box.minZ && pz - PLAYER_RADIUS < box.maxZ){
+      // Cek apakah permukaan atas block wajar dipijak (di bawah atau sejajar batas step-up)
+      if(box.topY <= py + MAX_STEP_UP + 0.1){
+        if(box.topY > highestGround){
+          highestGround = box.topY;
+        }
+      }
+    }
+  }
+
+  return highestGround;
+}
+
+// Deteksi tabrakan horizontal karakter vs dunia & block buatan
+function collidesAt(nx, ny, nz){
+  const limit = CONFIG.worldSize / 2 - 2;
+  if(nx < -limit || nx > limit || nz < -limit || nz > limit){
+    return true;
+  }
+
+  // Cek tabrakan objek dekorasi dasar (Rumah, Pohon, Gunung)
+  for(const o of obstacles){
+    const dx = nx - o.x;
+    const dz = nz - o.z;
+    if(dx * dx + dz * dz < (o.radius + PLAYER_RADIUS) ** 2){
+      return true;
+    }
+  }
+
+  // Cek tabrakan AABB terhadap setiap block buatan pemain
+  const pMinY = ny;
+  const pMaxY = ny + PLAYER_HEIGHT;
+
+  for(const b of state.buildings){
+    if(b.freeform===true || b.collidable===false) continue;
+    const box = getBuildingAABB(b);
+
+    // Jika karakter berada pada rentang ketinggian vertikal block ini
+    if(pMaxY > box.minY && pMinY < box.maxY - 0.05){
+      // Jika tinggi permukaan block melebihi batas step-up (terlalu tinggi untuk dipanjat otomatis)
+      if(box.topY > ny + MAX_STEP_UP){
+        if(nx + PLAYER_RADIUS > box.minX && nx - PLAYER_RADIUS < box.maxX &&
+           nz + PLAYER_RADIUS > box.minZ && nz - PLAYER_RADIUS < box.maxZ){
+          return true; // Dinding/block menghalangi pergerakan
+        }
+      }
+    }
+  }
+
+  return false;
+}
+
+function getClimbableAtPlayer(){
+  let best=null,bestD=Infinity;
+  for(const b of state.buildings){
+    if(b.freeform||b.collidable===false)continue;
+    if(!b.climbable&&!BUILD_BLOCKS[b.type]?.climbable)continue;
+    const box=getBuildingAABB(b);
+    const cx=Math.max(box.minX,Math.min(player.position.x,box.maxX));
+    const cz=Math.max(box.minZ,Math.min(player.position.z,box.maxZ));
+    const d=Math.hypot(player.position.x-cx,player.position.z-cz);
+    if(d<1.45&&player.position.y<box.maxY+.7&&player.position.y>box.minY-1.2&&d<bestD){best={b,box,d};bestD=d;}
+  }
+  return best;
+}
+function wantsClimb(move){return Math.abs(move.y)>.12||Math.abs(move.x)>.12||keys.KeyW||keys.KeyS||keys.ArrowUp||keys.ArrowDown}
+function updateClimbing(dt,move){
+  const target=getClimbableAtPlayer();
+  if(target&&wantsClimb(move)){
+    climbState="CLIMBING";climbTarget=target;
+  }else if(climbState==="CLIMBING"){
+    const box=climbTarget?.box;
+    if(!box||target?.b!==climbTarget.b){climbState="NONE";climbTarget=null;}
+  }
+  if(climbState!=="CLIMBING")return false;
+  const b=climbTarget.b,box=climbTarget.box;
+  const climbSpeed=BUILD_BLOCKS[b.type]?.climbType==="ladder"?4.5:BUILD_BLOCKS[b.type]?.climbType==="monkey_bar"?3.6:2.2;
+  let vertical=0;if(keys.KeyW||keys.ArrowUp||move.y>.12)vertical+=1;if(keys.KeyS||keys.ArrowDown||move.y<-.12)vertical-=1;
+  if(manualClimb||climbButtonHeld)vertical=vertical||1;
+  player.position.y=THREE.MathUtils.clamp(player.position.y+vertical*climbSpeed*dt,box.minY-.15,box.maxY+.05);
+  velocityY=0;onGround=false;
+  if(player.position.y>=box.maxY+.02&&vertical>0){climbState="NONE";climbTarget=null;}
+  if(player.position.y<=box.minY-.12&&vertical<0){climbState="NONE";climbTarget=null;}
+  return true;
+}
+function tryManualClimb(move){
+  if(!climbButtonHeld)return false;
+  const dir=new THREE.Vector3(Math.sin(camYaw),0,Math.cos(camYaw));
+  const ox=player.position.x+dir.x*1.0,oz=player.position.z+dir.z*1.0;
+  for(const b of state.buildings){
+    if(b.freeform||b.collidable===false)continue;
+    const box=getBuildingAABB(b);
+    if(ox>box.minX-.2&&ox<box.maxX+.2&&oz>box.minZ-.2&&oz<box.maxZ+.2&&box.maxY-player.position.y>1){
+      manualClimb=true;climbState="CLIMBING";climbTarget={b,box};return true;
+    }
+  }
+  manualClimb=false;return false;
+}
+
+/* =========================================================
+   MOVEMENT & PHYSICS UPDATE
+========================================================= */
+
+function getMove(){
+  let x=0;
+  let y=0;
+
+  if(keys.KeyW || keys.ArrowUp) y+=1;
+  if(keys.KeyS || keys.ArrowDown) y-=1;
+  if(keys.KeyA || keys.ArrowLeft) x-=1;
+  if(keys.KeyD || keys.ArrowRight) x+=1;
+
+  x+=moveInput.x;
+  y+=moveInput.y;
+
+  const len=Math.hypot(x,y);
+  if(len>1){
+    x/=len;
+    y/=len;
+  }
+
+  return {x,y};
+}
+
+function updateMovement(dt){
+  if(!player || paused || !gameStarted) return;
+  const move=getMove();
+  if(tryManualClimb(move)||updateClimbing(dt,move)){
+    animatePlayer(dt,true);return;
+  }
+  climbState="NONE";climbTarget=null;manualClimb=false;
+  const speed=(sprinting||keys.ShiftLeft||keys.ShiftRight)?CONFIG.sprintSpeed:CONFIG.walkSpeed;
+  const sin=Math.sin(camYaw),cos=Math.cos(camYaw);
+  const dx=(-move.x*cos+move.y*sin)*speed*dt;
+  const dz=(move.x*sin+move.y*cos)*speed*dt;
+  const currentY=player.position.y;
+  // Auto step-up kecil: bila tujuan punya lantai lebih tinggi, naikkan langsung sampai MAX_STEP_UP
+  if(dx!==0){const nx=player.position.x+dx;if(!collidesAt(nx,currentY,player.position.z)){player.position.x=nx}else{const step=getGroundHeight(nx,currentY,player.position.z);if(step-currentY<=MAX_STEP_UP+.05){player.position.x=nx;player.position.y=Math.max(player.position.y,step);velocityY=0;onGround=true;}}}
+  if(dz!==0){const nz=player.position.z+dz;if(!collidesAt(player.position.x,currentY,nz)){player.position.z=nz}else{const step=getGroundHeight(player.position.x,currentY,nz);if(step-currentY<=MAX_STEP_UP+.05){player.position.z=nz;player.position.y=Math.max(player.position.y,step);velocityY=0;onGround=true;}}}
+  const ground=getGroundHeight(player.position.x,player.position.y,player.position.z);
+  if(player.position.y<=ground+.1&&velocityY<=0){player.position.y=ground;velocityY=0;onGround=true}else{onGround=false;velocityY-=CONFIG.gravity*dt;player.position.y+=velocityY*dt;if(player.position.y<=ground){player.position.y=ground;velocityY=0;onGround=true;}}
+  if(player.position.y<-15)respawn();
+  const moving=Math.hypot(dx,dz)>.001;if(moving){const targetAngle=Math.atan2(dx,dz);let diff=targetAngle-playerVisual.rotation.y;while(diff<-Math.PI)diff+=Math.PI*2;while(diff>Math.PI)diff-=Math.PI*2;playerVisual.rotation.y+=diff*Math.min(1,dt*15)}
+  animatePlayer(dt,moving);
+}
+
+function jump(){
+  if(!gameStarted || paused) return;
+  if(onGround){
+    velocityY=CONFIG.jumpForce;
+    onGround=false;
+  }
+}
+
+function respawn(){
+  player.position.set(
+    state.checkpoint.x,
+    state.checkpoint.y,
+    state.checkpoint.z
+  );
+  velocityY=0;
+  toast("↩ Kembali ke checkpoint");
+}
+
+/* =========================================================
+   PLAYER ANIMATION
+========================================================= */
+
+function animatePlayer(dt, moving){
+  if(!playerVisual) return;
+
+  const t=performance.now()*.012;
+  const swing=moving ? Math.sin(t*1.5)*.35 : 0;
+  const legs=playerVisual.children;
+
+  if(legs[2]) legs[2].rotation.x=swing;
+  if(legs[3]) legs[3].rotation.x=-swing;
+
+  if(player.userData.rainbow){
+    player.userData.rainbow.rotation.z+=dt*2;
+    const hue=(performance.now()*.0002)%1;
+    player.userData.rainbow.material.color.setHSL(hue,.9,.6);
+  }
+}
+
+/* =========================================================
+   CAMERA CONTROL
+========================================================= */
+
+function updateCamera(dt){
+  if(!player)return;
+  const climbTargetPitch=climbState==="CLIMBING"?Math.min(1.05,camPitch+.22):camPitch;
+  climbCameraPitch=THREE.MathUtils.lerp(climbCameraPitch,climbTargetPitch,1-Math.pow(.0008,dt));
+  const target=new THREE.Vector3(player.position.x,player.position.y+2,player.position.z);
+  const desired=new THREE.Vector3(
+    target.x-Math.sin(camYaw)*Math.cos(camPitch)*camDistance,
+    target.y+Math.sin(camPitch)*camDistance,
+    target.z-Math.cos(camYaw)*Math.cos(camPitch)*camDistance
+  );
+  desired.y=Math.max(.65,desired.y);
+  camera.position.lerp(desired,1-Math.pow(.001,dt));
+  camera.lookAt(target);
+}
+
+/* =========================================================
+   CAMERA POINTER & GESTURE CONTROLS
+========================================================= */
+
+let cameraPointerId=null;
+let lastPointerX=0;
+let lastPointerY=0;
+
+const cameraZone=$("cameraZone");
+
+cameraZone.addEventListener("pointerdown",e=>{
+  if(!gameStarted || paused || buildMode || pinching) return;
+  cameraPointerId=e.pointerId;
+  lastPointerX=e.clientX;
+  lastPointerY=e.clientY;
+  cameraZone.setPointerCapture(e.pointerId);
+});
+
+cameraZone.addEventListener("pointermove",e=>{
+  if(e.pointerId!==cameraPointerId || pinching) return;
+  const dx=e.clientX-lastPointerX;
+  const dy=e.clientY-lastPointerY;
+
+  lastPointerX=e.clientX;
+  lastPointerY=e.clientY;
+
+  camYaw-=dx*.008;
+  camPitch+=dy*.006;
+  camPitch=THREE.MathUtils.clamp(camPitch,-.05,1.25);
+});
+
+cameraZone.addEventListener("pointerup",e=>{
+  if(e.pointerId===cameraPointerId){
+    cameraPointerId=null;
+  }
+});
+
+cameraZone.addEventListener("pointercancel",e=>{
+  if(e.pointerId===cameraPointerId){
+    cameraPointerId=null;
+  }
+});
+
+/* Mobile Pinch Zoom */
+const activeTouches=new Map();
+let pinchStartDistance=0,pinchStartCamera=8,pinching=false;
+
+function touchDistance(){
+  const a=[...activeTouches.values()];
+  return a.length<2?0:Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);
+}
+
+cameraZone.addEventListener("pointerdown",e=>{
+  if(e.pointerType!=="mouse"){
+    activeTouches.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(activeTouches.size===2){
+      pinching=true;
+      cameraPointerId=null;
+      pinchStartDistance=touchDistance();
+      pinchStartCamera=camDistance;
+    }
+  }
+});
+
+cameraZone.addEventListener("pointermove",e=>{
+  if(e.pointerType!=="mouse"&&activeTouches.has(e.pointerId)){
+    activeTouches.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(pinching){
+      const d=touchDistance();
+      camDistance=THREE.MathUtils.clamp(pinchStartCamera-(d-pinchStartDistance)*.025,CONFIG.minCameraDistance,CONFIG.maxCameraDistance);
+    }
+  }
+});
+
+function endTouch(e){
+  activeTouches.delete(e.pointerId);
+  if(activeTouches.size<2)pinching=false;
+}
+
+cameraZone.addEventListener("pointerup",endTouch);
+cameraZone.addEventListener("pointercancel",endTouch);
+
+/* Desktop Mouse Camera Drag */
+let mouseDown=false;
+
+renderer.domElement.addEventListener("mousedown",e=>{
+  if(e.button===0) mouseDown=true;
+});
+
+window.addEventListener("mouseup",()=>{
+  mouseDown=false;
+});
+
+window.addEventListener("mousemove",e=>{
+  if(!mouseDown || !gameStarted || paused || buildMode) return;
+  camYaw-=e.movementX*.006;
+  camPitch+=e.movementY*.004;
+  camPitch=THREE.MathUtils.clamp(camPitch,-.05,1.25);
+});
+
+renderer.domElement.addEventListener("wheel",e=>{
+  if(!gameStarted||paused)return;
+  e.preventDefault();
+  camDistance=THREE.MathUtils.clamp(camDistance+e.deltaY*.012,CONFIG.minCameraDistance,CONFIG.maxCameraDistance);
+},{passive:false});
+
+/* =========================================================
+   JOYSTICK VIRTUAL
+========================================================= */
+
+const joystick=$("joystick");
+const stick=$("stick");
+
+let joystickPointer=null;
+
+joystick.addEventListener("pointerdown",e=>{
+  joystickPointer=e.pointerId;
+  joystick.setPointerCapture(e.pointerId);
+  updateJoystick(e);
+});
+
+joystick.addEventListener("pointermove",e=>{
+  if(e.pointerId===joystickPointer){
+    updateJoystick(e);
+  }
+});
+
+function updateJoystick(e){
+  const r=joystick.getBoundingClientRect();
+  const cx=r.left+r.width/2;
+  const cy=r.top+r.height/2;
+
+  let dx=e.clientX-cx;
+  let dy=e.clientY-cy;
+  const max=42;
+
+  const len=Math.hypot(dx,dy);
+  if(len>max){
+    dx=dx/len*max;
+    dy=dy/len*max;
+  }
+
+  stick.style.left=`calc(50% + ${dx}px)`;
+  stick.style.top=`calc(50% + ${dy}px)`;
+
+  moveInput.x=dx/max;
+  moveInput.y=-dy/max;
+}
+
+function resetJoystick(){
+  joystickPointer=null;
+  stick.style.left="50%";
+  stick.style.top="50%";
+  moveInput.x=0;
+  moveInput.y=0;
+}
+
+joystick.addEventListener("pointerup",resetJoystick);
+joystick.addEventListener("pointercancel",resetJoystick);
+
+/* =========================================================
+   MOBILE BUTTONS
+========================================================= */
+
+function bindHoldButton(el,down,up=()=>{}){
+  el.addEventListener("pointerdown",e=>{
+    e.preventDefault();
+    down();
+  });
+
+  el.addEventListener("pointerup",e=>{
+    e.preventDefault();
+    up();
+  });
+
+  el.addEventListener("pointercancel",up);
+  el.addEventListener("pointerleave",up);
+}
+
+bindHoldButton(
+  $("sprintBtn"),
+  ()=>sprinting=true,
+  ()=>sprinting=false
+);
+
+$("jumpBtn").addEventListener("pointerdown",e=>{
+  e.preventDefault();
+  jump();
+});
+
+$("actionBtn").addEventListener("pointerdown",e=>{e.preventDefault();interact();});
+bindHoldButton($("climbBtn"),()=>{climbButtonHeld=true;$("climbBtn").classList.add("climbActive")},()=>{climbButtonHeld=false;manualClimb=false;$("climbBtn").classList.remove("climbActive")});
+
+/* =========================================================
+   KEYBOARD
+========================================================= */
+
+window.addEventListener("keydown",e=>{
+  keys[e.code]=true;
+
+  if(e.code==="Space"){e.preventDefault();jump();}
+  if(e.code==="KeyQ"){climbButtonHeld=true;}
+
+  if(e.code==="Escape"){
+    if(dialog.classList.contains("hidden")===false){
+      closeDialog();
+    }else if(panelOverlay.classList.contains("hidden")===false){
+      closePanel();
+    }else{
+      togglePause();
+    }
+  }
+});
+
+window.addEventListener("keyup",e=>{keys[e.code]=false;if(e.code==="KeyQ"){climbButtonHeld=false;manualClimb=false;}});
+
+/* =========================================================
+   INTERACTION SYSTEM
+========================================================= */
+
+function distanceXZ(a,b){
+  const dx=a.x-b.x;
+  const dz=a.z-b.z;
+  return Math.hypot(dx,dz);
+}
+
+function toggleMechanism(b){
+  const d=BUILD_BLOCKS[b.type],m=buildMeshes.get(b.id);
+  if(!d?.mechanism||!m)return false;
+  if(d.mechanism==="door"){
+    b.mechanismActive=!b.mechanismActive;
+    m.rotation.y=b.ry+(b.mechanismActive?Math.PI/2:0);
+    toast(b.mechanismActive?"🚪 Pintu dibuka":"🚪 Pintu ditutup");
+  }else if(d.mechanism==="movingPlatform"){
+    b.mechanismActive=!b.mechanismActive;
+    m.position.y=b.y+(b.mechanismActive?3:0);
+    toast(b.mechanismActive?"↕ Platform naik":"↕ Platform turun");
+  }else if(d.mechanism==="triggerBridge"){
+    const active=!b.mechanismActive;b.mechanismActive=active;
+    for(const p of state.buildings.filter(v=>BUILD_BLOCKS[v.type]?.mechanism==="movingPlatform")){p.mechanismActive=active;const pm=buildMeshes.get(p.id);if(pm)pm.position.y=p.y+(active?3:0);}
+    toast(active?"⚙ Trigger ON — platform bergerak":"⚙ Trigger OFF — platform kembali");
+  }
+  scheduleSave();return true;
+}
+
+function interact(){
+  if(!gameStarted || paused) return;
+
+  /* NPC Interaksi */
+  for(const n of npcs){
+    if(distanceXZ(player.position, n.group.position)<3){
+      showDialog(n.name, npcText(n.role));
+      return;
+    }
+  }
+
+  /* Mekanisme block pemain */
+  for(const b of state.buildings){
+    if(distanceXZ(player.position,{x:b.x,z:b.z})<2.4 && BUILD_BLOCKS[b.type]?.mechanism){
+      if(toggleMechanism(b))return;
+    }
+  }
+
+  /* Portal Teleport */
+  for(const p of portals){
+    if(distanceXZ(player.position, p.group.position)<3){
+      teleportTo(p.area);
+      return;
+    }
+  }
+
+  /* Rahasia Harta */
+  if(treasureSwitch && distanceXZ(player.position, treasureSwitch.position)<3){
+    activateTreasure();
+    return;
+  }
+
+  toast("Tidak ada yang bisa dilakukan di dekat sini.");
+}
+
+function npcText(role){
+  if(role==="Guide"){
+    return "Selamat datang di BLOCKVERSE!\n\nSemua area sudah terbuka. Tidak ada level requirement. Jelajahi dunia, kumpulkan coins, gunakan shop, ubah karakter, dan bersenang-senang.";
+  }
+  if(role==="Builder"){
+    return "Dunia ini adalah sandbox. Kamu bebas bergerak dan bereksperimen tanpa harus menyelesaikan quest terlebih dahulu.";
+  }
+  return "Fun Park punya mini-game Coin Rush. Kumpulkan coin sebanyak mungkin sebelum waktunya habis!";
+}
+
+function teleportTo(area){
+  const d=AREA_DATA[area];
+  let x=d.x;
+  let z=d.z;
+
+  if(area==="spawn"){ x=0; z=8; }
+  else if(area==="valley"){ x=-45; z=8; }
+  else if(area==="cave"){ x=45; z=8; }
+  else if(area==="sky"){ x=0; z=62; }
+  else if(area==="park"){ x=45; z=-35; }
+  else if(area==="creative_flatland"){ x=75; z=65; }
+  else if(area==="cliff"){ x=-92; z=34; }
+  else if(area==="monolith"){ x=88; z=-70; }
+
+  const targetY = getGroundHeight(x, 0, z);
+
+  player.position.set(x, targetY, z);
+
+  state.checkpoint={
+    area,
+    x,
+    y:targetY,
+    z
+  };
+
+  updateArea(area);
+  scheduleSave();
+  toast("🚀 Teleport ke "+d.name);
+}
+
+/* =========================================================
+   TREASURE ACTIVATION
+========================================================= */
+
+function activateTreasure(){
+  if(state.quests.treasure){
+    toast("Treasure sudah ditemukan.");
+    return;
+  }
+
+  state.quests.treasure=true;
+  addCoins(250);
+  addXP(100);
+  unlockAchievement("treasure");
+  treasureSwitch.visible=false;
+
+  toast("💎 Harta rahasia ditemukan! +250 Coins");
+  scheduleSave();
+}
+
+/* =========================================================
+   ECONOMY SYSTEM
+========================================================= */
+
+function addCoins(amount){
+  state.coins=Math.max(0, state.coins+Math.floor(amount));
+  state.quests.collector=Math.min(100, state.quests.collector+Math.max(0,amount>0?1:0));
+  updateHUD();
+  scheduleSave();
+}
+
+function addXP(amount){
+  state.xp+=Math.max(0,amount);
+
+  while(state.xp>=xpRequired()){
+    state.xp-=xpRequired();
+    state.level++;
+    addCoins(50);
+    toast("⭐ LEVEL UP! Level "+state.level);
+  }
+
+  updateHUD();
+  scheduleSave();
+}
+
+function xpRequired(){
+  return 100+(state.level-1)*50;
+}
+
+/* =========================================================
+   COIN COLLECTION
+========================================================= */
+
+function collectCoins(dt){
+  for(const c of coins){
+    if(c.collected || !c.mesh.visible) continue;
+
+    c.mesh.rotation.y+=dt*3;
+
+    const d=distanceXZ(player.position, c.mesh.position);
+    const vertical=Math.abs(player.position.y-c.mesh.position.y)<2.5;
+
+    if(d<1.5 && vertical){
+      c.collected=true;
+      c.mesh.visible=false;
+
+      if(miniGameActive){
+        coinRushCoins++;
+        $("miniScore").textContent=coinRushCoins;
+      }else{
+        addCoins(c.value);
+        addXP(5);
+        floatingText("+"+c.value, c.mesh.position);
+      }
+
+      state.quests.collector=Math.min(100, state.quests.collector+1);
+    }
+  }
+}
+
+/* =========================================================
+   QUESTS & ACHIEVEMENTS
+========================================================= */
+
+function unlockAchievement(id){
+  if(state.achievements.includes(id)) return;
+  state.achievements.push(id);
+
+  const names={
+    treasure:"💎 Treasure Hunter",
+    explorer:"🌎 Explorer",
+    collector:"🪙 Coin Collector",
+    level10:"⭐ Level 10",
+    rush:"⚡ Coin Rush Master"
+  };
+
+  toast("🏆 Achievement: "+(names[id]||id));
+  scheduleSave();
+}
+
+function updateAchievements(){
+  if(state.quests.explorer>=5){
+    unlockAchievement("explorer");
+  }
+  if(state.quests.collector>=50){
+    unlockAchievement("collector");
+  }
+  if(state.level>=10){
+    unlockAchievement("level10");
+  }
+}
+
+/* =========================================================
+   FLOATING TEXT & EFFECTS
+========================================================= */
+
+function floatingText(text,pos){
+  const canvas=document.createElement("canvas");
+  canvas.width=256;
+  canvas.height=64;
+
+  const ctx=canvas.getContext("2d");
+  ctx.font="bold 38px Arial";
+  ctx.fillStyle="#ffffff";
+  ctx.textAlign="center";
+  ctx.fillText(text,128,44);
+
+  const texture=new THREE.CanvasTexture(canvas);
+  const sprite=new THREE.Sprite(
+    new THREE.SpriteMaterial({
+      map:texture,
+      transparent:true
+    })
+  );
+
+  sprite.scale.set(3,.75,1);
+  sprite.position.copy(pos);
+  sprite.position.y+=1;
+
+  dynamicWorld.add(sprite);
+
+  effects.push({
+    object:sprite,
+    life:1
+  });
+}
+
+function updateEffects(dt){
+  for(let i=effects.length-1;i>=0;i--){
+    const e=effects[i];
+    e.life-=dt;
+    e.object.position.y+=dt*1.5;
+    e.object.material.opacity=Math.max(0,e.life);
+
+    if(e.life<=0){
+      dynamicWorld.remove(e.object);
+      if(e.object.material.map){
+        e.object.material.map.dispose();
+      }
+      e.object.material.dispose();
+      effects.splice(i,1);
+    }
+  }
+}
+
+/* =========================================================
+   SHOP
+========================================================= */
+
+const SHOP_ITEMS=[
+  { id:"skin_red", name:"Skin Merah", type:"skin", value:"red", price:100 },
+  { id:"skin_green", name:"Skin Hijau", type:"skin", value:"green", price:100 },
+  { id:"skin_purple", name:"Skin Ungu", type:"skin", value:"purple", price:150 },
+  { id:"skin_yellow", name:"Skin Kuning", type:"skin", value:"yellow", price:150 },
+  { id:"outfit_explorer", name:"Explorer", type:"outfit", value:"explorer", price:200 },
+  { id:"outfit_ninja", name:"Ninja", type:"outfit", value:"ninja", price:300 },
+  { id:"outfit_royal", name:"Royal", type:"outfit", value:"royal", price:500 },
+  { id:"outfit_sports", name:"Sports", type:"outfit", value:"sports", price:250 },
+  { id:"hair_spiky", name:"Spiky Hair", type:"hair", value:"spiky", price:150 },
+  { id:"hair_cap", name:"Cap", type:"hair", value:"cap", price:150 },
+  { id:"accessory_halo", name:"Halo", type:"accessory", value:"halo", price:350 },
+  { id:"accessory_backpack", name:"Backpack", type:"accessory", value:"backpack", price:200 },
+  { id:"effect_rainbow", name:"Rainbow Effect", type:"effect", value:"rainbow", price:700 }
+];
+
+function buyItem(item){
+  if(state.inventory.includes(item.id)){
+    equipItem(item);
+    return;
+  }
+
+  if(state.coins<item.price){
+    toast("🪙 Coins belum cukup.");
+    return;
+  }
+
+  state.coins-=item.price;
+  state.inventory.push(item.id);
+  equipItem(item);
+
+  toast("🛒 "+item.name+" dibeli!");
+  scheduleSave();
+  updateHUD();
+  showShop();
+}
+
+function equipItem(item){
+  state.customization[item.type]=item.value;
+  createPlayer();
+  toast("✨ "+item.name+" digunakan.");
+  scheduleSave();
+}
+
+function showShop(){
+  const html=`
+    <div class="closeRow">
+      <h1>🛒 Shop</h1>
+      <button class="close" onclick="window.closePanel()">✕</button>
+    </div>
+    <p>Bonus kosmetik saja. Shop tidak pernah mengunci gerak, panjat, atau building.</p>
+    <div class="cards">
+      ${SHOP_ITEMS.map(item=>{
+        const owned=state.inventory.includes(item.id);
+        return `
+          <div class="card">
+            <h3>${item.name}</h3>
+            <small>${owned?"Sudah dimiliki":"Harga: "+item.price+" Coins"}</small>
+            <button
+              class="${owned?"equipped":""}"
+              onclick='window.shopAction(${JSON.stringify(item)})'>
+              ${owned?"PAKAI":"BELI"}
+            </button>
+          </div>
+        `;
+      }).join("")}
+    </div>
+  `;
+
+  panelContent.innerHTML=html;
+  panelOverlay.classList.remove("hidden");
+}
+
+window.shopAction=buyItem;
+
+/* =========================================================
+   CHARACTER CUSTOMIZATION
+========================================================= */
+
+function showCharacter(){
+  const faces=[["happy","🙂"],["cool","😎"],["star","⭐"]];
+  const skins=[["blue","Blue"],["red","Red"],["green","Green"],["purple","Purple"],["yellow","Yellow"]];
+
+  const html=`
+    <div class="closeRow">
+      <h1>👤 Karakter</h1>
+      <button class="close" onclick="window.closePanel()">✕</button>
+    </div>
+
+    <h3>Wajah</h3>
+    <div class="cards">
+      ${faces.map(f=>`
+        <div class="card">
+          <h3>${f[1]}</h3>
+          <button onclick="window.setCustomization('face','${f[0]}')">
+            ${state.customization.face===f[0]?"DIPAKAI":"PILIH"}
+          </button>
+        </div>
+      `).join("")}
+    </div>
+
+    <h3>Skin</h3>
+    <div class="cards">
+      ${skins.map(s=>`
+        <div class="card">
+          <h3>${s[1]}</h3>
+          <button onclick="window.setCustomization('skin','${s[0]}')">
+            ${state.customization.skin===s[0]?"DIPAKAI":"PILIH"}
+          </button>
+        </div>
+      `).join("")}
+    </div>
+  `;
+
+  panelContent.innerHTML=html;
+  panelOverlay.classList.remove("hidden");
+}
+
+window.setCustomization=(type,value)=>{
+  if(type==="skin" && value!=="blue"){
+    const id="skin_"+value;
+    if(!state.inventory.includes(id)){
+      toast("Beli skin ini di Shop terlebih dahulu.");
+      return;
+    }
+  }
+
+  state.customization[type]=value;
+  createPlayer();
+  scheduleSave();
+  showCharacter();
+};
+
+/* =========================================================
+   INVENTORY
+========================================================= */
+
+function showInventory(){
+  const names={};
+  SHOP_ITEMS.forEach(i=>names[i.id]=i.name);
+
+  const html=`
+    <div class="closeRow">
+      <h1>🎒 Inventory</h1>
+      <button class="close" onclick="window.closePanel()">✕</button>
+    </div>
+
+    <div class="cards">
+      ${state.inventory.map(id=>`
+        <div class="card">
+          <h3>${names[id]||id}</h3>
+          <small>${id}</small>
+        </div>
+      `).join("")}
+    </div>
+  `;
+
+  panelContent.innerHTML=html;
+  panelOverlay.classList.remove("hidden");
+}
+
+/* =========================================================
+   ACTIVITIES & QUESTS
+========================================================= */
+
+function showQuests(){
+  const html=`
+    <div class="closeRow">
+      <h1>🏆 Aktivitas</h1>
+      <button class="close" onclick="window.closePanel()">✕</button>
+    </div>
+
+    <div class="quest">
+      <div class="questTop">
+        <strong>🌎 Explorer</strong>
+        <span>${Math.floor(state.quests.explorer)}/5</span>
+      </div>
+      <div class="progress">
+        <div style="width:${Math.min(100,state.quests.explorer/5*100)}%"></div>
+      </div>
+    </div>
+
+    <div class="quest">
+      <div class="questTop">
+        <strong>🪙 Collect Coins</strong>
+        <span>${Math.min(50,state.quests.collector)}/50</span>
+      </div>
+      <div class="progress">
+        <div style="width:${Math.min(100,state.quests.collector/50*100)}%"></div>
+      </div>
+    </div>
+
+    <div class="quest">
+      <div class="questTop">
+        <strong>💎 Treasure</strong>
+        <span>${state.quests.treasure?"COMPLETED":"AVAILABLE"}</span>
+      </div>
+    </div>
+
+    <h2>🏅 Achievements</h2>
+    ${
+      state.achievements.length
+      ? state.achievements.map(a=>`<div class="card">${a}</div>`).join("")
+      : `<p>Belum ada achievement. Jelajahi dunia!</p>`
+    }
+
+    <h2>⚡ Mini Game</h2>
+    <div class="card">
+      <h3>Coin Rush</h3>
+      <p>Kumpulkan coin sebanyak mungkin dalam 30 detik.</p>
+      <button class="primary" onclick="window.startCoinRush()">
+        MULAI COIN RUSH
+      </button>
+    </div>
+  `;
+
+  panelContent.innerHTML=html;
+  panelOverlay.classList.remove("hidden");
+}
+
+/* =========================================================
+   WORLD MAP PANEL
+========================================================= */
+
+function showWorld(){
+  const html=`
+    <div class="closeRow">
+      <h1>🌎 Dunia</h1>
+      <button class="close" onclick="window.closePanel()">✕</button>
+    </div>
+    <div class="cards">
+      ${Object.entries(AREA_DATA).map(([id,d])=>`
+        <div class="card">
+          <h3>${d.name}</h3>
+          <small>Area terbuka</small>
+          <button onclick="window.teleportToArea('${id}')">
+            🚀 TELEPORT
+          </button>
+        </div>
+      `).join("")}
+    </div>
+  `;
+
+  panelContent.innerHTML=html;
+  panelOverlay.classList.remove("hidden");
+}
+
+window.teleportToArea=id=>{
+  closePanel();
+  teleportTo(id);
+};
+
+/* =========================================================
+   SETTINGS & DATA MANAGEMENT
+========================================================= */
+
+function showSettings(){
+  const html=`
+    <div class="closeRow">
+      <h1>⚙ Pengaturan</h1>
+      <button class="close" onclick="window.closePanel()">✕</button>
+    </div>
+
+    <div class="card">
+      <h3>Kualitas Grafis</h3>
+      <p>Kualitas saat ini: ${state.settings.quality}</p>
+      <div class="cards">
+        <button onclick="window.setQuality('low')">LOW</button>
+        <button onclick="window.setQuality('medium')">MEDIUM</button>
+        <button onclick="window.setQuality('high')">HIGH</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Sound Effect</h3>
+      <button onclick="window.toggleSound()">
+        ${state.settings.sound?"🔊 ON":"🔇 OFF"}
+      </button>
+    </div>
+
+    <div class="card">
+      <h3>Data</h3>
+      <button onclick="window.saveManual()">💾 SIMPAN SEKARANG</button>
+      <button class="danger" onclick="window.resetPlayerBuildings()">🗑 RESET PLAYER BUILDINGS</button>
+      <button class="danger" onclick="window.resetData()">RESET DATA</button>
+    </div>
+  `;
+
+  panelContent.innerHTML=html;
+  panelOverlay.classList.remove("hidden");
+}
+
+window.setQuality=q=>{
+  state.settings.quality=q;
+  const dpr=q==="low"?1:q==="medium"?Math.min(devicePixelRatio,1.25):Math.min(devicePixelRatio,1.5);
+  renderer.setPixelRatio(dpr);
+  scene.fog.far=q==="low"?110:q==="medium"?145:180;
+  scheduleSave();
+  showSettings();
+};
+
+window.toggleSound=()=>{
+  state.settings.sound=!state.settings.sound;
+  scheduleSave();
+  showSettings();
+};
+
+window.saveManual=()=>{ saveGame(false); };
+window.resetPlayerBuildings=resetPlayerBuildings;
+
+window.resetData=()=>{
+  if(confirm("Reset semua progress?")){
+    localStorage.removeItem(CONFIG.saveKey);
+    location.reload();
+  }
+};
+
+/* =========================================================
+   HOW TO PLAY
+========================================================= */
+
+function showHow(){
+  panelContent.innerHTML=`
+    <div class="closeRow">
+      <h1>❔ Cara Bermain</h1>
+      <button class="close" onclick="window.closePanel()">✕</button>
+    </div>
+
+    <div class="card">
+      <h3>🎮 PC</h3>
+      <p>
+        WASD / Arrow = bergerak<br>
+        Shift = sprint<br>
+        Space = lompat<br>
+        Mouse = kamera<br>
+        E = interaksi<br>
+        ESC = pause
+      </p>
+    </div>
+
+    <div class="card">
+      <h3>📱 Mobile</h3>
+      <p>
+        Joystick kiri = bergerak<br>
+        Geser area kanan = kamera<br>
+        ↑ = lompat<br>
+        ⚡ = sprint<br>
+        ✦ = interaksi
+      </p>
+    </div>
+
+    <div class="card">
+      <h3>🏗️ Build Mode</h3>
+      <p>
+        Tekan 🧱 BUILD atau B. Semua block gratis dan unlimited.<br>
+        Pilih block → arahkan kamera → PLACE.<br>
+        Gunakan SELECT, DELETE, ROTATE, COPY, UNDO/REDO, SAVE BLUEPRINT, STAMP, MIRROR, FREEFORM, dan DRAG-TO-PAINT.
+      </p>
+    </div>
+  `;
+
+  panelOverlay.classList.remove("hidden");
+}
+
+/* =========================================================
+   DIALOG & PANELS
+========================================================= */
+
+function showDialog(title,text){
+  $("dialogTitle").textContent=title;
+  $("dialogText").textContent=text;
+  dialog.classList.remove("hidden");
+}
+
+function closeDialog(){ dialog.classList.add("hidden"); }
+
+function togglePause(){
+  if(!gameStarted) return;
+  paused=!paused;
+  if(paused){
+    saveGame(true);
+    pause.classList.remove("hidden");
+  }else{
+    pause.classList.add("hidden");
+    clock.getDelta();
+  }
+}
+
+function closePanel(){ panelOverlay.classList.add("hidden"); }
+window.closePanel=closePanel;
+
+/* =========================================================
+   MAIN MENU & GAME LOOP CONTROL
+========================================================= */
+
+function openMainMenu(){
+  gameStarted=false;
+  paused=false;
+  miniGameActive=false;
+
+  pause.classList.add("hidden");
+  panelOverlay.classList.add("hidden");
+  dialog.classList.add("hidden");
+  miniGame.classList.add("hidden");
+
+  hud.classList.add("hidden");
+  mobile.classList.add("hidden");
+  toggleBuildMode(false);
+  $("buildModeBtn").classList.remove("show");
+
+  resetJoystick();
+  menu.classList.remove("hidden");
+  saveGame(true);
+}
+
+function startGame(){
+  menu.classList.add("hidden");
+  hud.classList.remove("hidden");
+  mobile.classList.remove("hidden");
+
+  gameStarted=true;
+  paused=false;
+  $("buildModeBtn").classList.add("show");
+
+  if(!player){ createPlayer(); }
+  toast("🎮 Selamat bermain!");
+  clock.getDelta();
+}
+
+/* =========================================================
+   MINI GAME COIN RUSH
+========================================================= */
+
+let miniGameActive=false;
+let coinRushTime=0;
+let coinRushCoins=0;
+
+function startCoinRush(){
+  closePanel();
+  if(miniGameActive) return;
+
+  miniGameActive=true;
+  coinRushTime=30;
+  coinRushCoins=0;
+
+  $("miniScore").textContent="0";
+  $("miniTimer").textContent="30";
+  miniGame.classList.remove("hidden");
+
+  for(const c of coins){
+    if(c.area==="park"){
+      c.collected=false;
+      c.mesh.visible=true;
+    }
+  }
+
+  teleportTo("park");
+  toast("⚡ COIN RUSH DIMULAI!");
+  if(!gameStarted) startGame();
+}
+
+window.startCoinRush=startCoinRush;
+
+function updateMiniGame(dt){
+  if(!miniGameActive || paused) return;
+
+  coinRushTime-=dt;
+  $("miniTimer").textContent=Math.max(0,Math.ceil(coinRushTime));
+
+  if(coinRushTime<=0){
+    endMiniGame();
+  }
+}
+
+function endMiniGame(){
+  if(!miniGameActive) return;
+  miniGameActive=false;
+  miniGame.classList.add("hidden");
+
+  const reward=50+coinRushCoins*10;
+  addCoins(reward);
+  addXP(coinRushCoins*5);
+
+  if(coinRushCoins>=15){
+    unlockAchievement("rush");
+  }
+
+  toast("⚡ Coin Rush selesai! "+coinRushCoins+" coin → hadiah "+reward+" Coins");
+}
+
+/* =========================================================
+   DAILY REWARD
+========================================================= */
+
+function checkDaily(){
+  const date=new Date().toISOString().slice(0,10);
+  if(state.daily.date!==date){
+    state.daily.date=date;
+    state.daily.claimed=false;
+  }
+}
+
+function claimDaily(){
+  checkDaily();
+  if(state.daily.claimed){
+    toast("🎁 Reward hari ini sudah diambil.");
+    return;
+  }
+
+  state.daily.claimed=true;
+  addCoins(100);
+  addXP(25);
+  toast("🎁 Daily Reward +100 Coins");
+  scheduleSave();
+}
+
+/* =========================================================
+   HUD & TOAST
+========================================================= */
+
+function updateHUD(){
+  $("coinText").textContent=state.coins;
+  $("levelText").textContent=state.level;
+  $("xpText").textContent=`${state.xp} / ${xpRequired()}`;
+}
+
+let toastTimer;
+
+function toast(text){
+  const el=$("toast");
+  el.textContent=text;
+  el.classList.add("show");
+
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>{
+    el.classList.remove("show");
+  },2200);
+}
+
+/* =========================================================
+   EVENT BINDINGS
+========================================================= */
+
+$("playBtn").onclick=startGame;
+$("characterBtn").onclick=showCharacter;
+$("shopBtn").onclick=showShop;
+$("inventoryBtn").onclick=showInventory;
+$("worldBtn").onclick=showWorld;
+$("questsBtn").onclick=showQuests;
+$("settingsBtn").onclick=showSettings;
+$("howBtn").onclick=showHow;
+$("openMenu").onclick=togglePause;
+$("resumeBtn").onclick=togglePause;
+$("pauseSaveBtn").onclick=()=>{ saveGame(false); };
+$("pauseMenuBtn").onclick=openMainMenu;
+$("dialogClose").onclick=closeDialog;
+$("dialogOk").onclick=closeDialog;
+
+/* BUILD UI EVENTS */
+function bindBuildUI(){
+  $("buildModeBtn").onclick=()=>toggleBuildMode();
+  $("blocksTool").onclick=()=>{$("buildBlocksPanel").classList.toggle("show");renderBuildLibrary()};
+  $("closeBlocksPanel").onclick=()=>$("buildBlocksPanel").classList.remove("show");
+  $("selectTool").onclick=()=>setBuildTool("select");$("placeTool").onclick=()=>setBuildTool("place");$("deleteTool").onclick=()=>setBuildTool("delete");$("rotateTool").onclick=()=>setBuildTool("rotate");$("copyTool").onclick=()=>setBuildTool("copy");$("stampTool").onclick=()=>setBuildTool("stamp");
+  $("undoTool").onclick=undoBuild;$("redoTool").onclick=redoBuild;$("saveBuildTool").onclick=saveBuildWorld;$("exitBuildTool").onclick=()=>toggleBuildMode(false);
+  $("selectionRotate").onclick=rotateSelectedBuilding;$("selectionCopy").onclick=duplicateSelectedBuilding;$("selectionDelete").onclick=deleteSelectedBuilding;
+  $("buildZoomOut").onclick=()=>camDistance=THREE.MathUtils.clamp(camDistance+2,CONFIG.minCameraDistance,CONFIG.maxCameraDistance);$("buildZoomIn").onclick=()=>camDistance=THREE.MathUtils.clamp(camDistance-2,CONFIG.minCameraDistance,CONFIG.maxCameraDistance);
+  $("freeformToggle").onclick=toggleFreeform;$("dragPaintToggle").onclick=toggleDragPaint;$("mirrorToggle").onclick=toggleMirror;$("mirrorAxisBtn").onclick=cycleMirrorAxis;$("mirrorPivotBtn").onclick=setBuildPivot;
+  $("blueprintBtn").onclick=()=>{$("blueprintPanel").classList.toggle("show");renderBlueprintLibrary()};$("closeBlueprintPanel").onclick=()=>$("blueprintPanel").classList.remove("show");$("saveBlueprintBtn").onclick=createBlueprintFromSelection;
+  renderer.domElement.addEventListener("pointermove",e=>{if(buildMode){setBuildPointer(e);updateGhost();updateBuildSelectionBox(e);if(buildPainting)paintAtPointer()}});
+  renderer.domElement.addEventListener("pointerdown",e=>{if(!buildMode)return;e.preventDefault();setBuildPointer(e);if(buildTool==="place"){buildPainting=state.buildSettings.dragPaint;paintHistoryStarted=false;paintLastCell=null;paintAtPointer();}else if(buildTool==="stamp"){stampBlueprint()}else if(["select","delete","rotate","copy"].includes(buildTool)){startBuildPointer(e)}});
+  renderer.domElement.addEventListener("pointerup",e=>{if(buildPainting){buildPainting=false;paintHistoryStarted=false;paintLastCell=null;scheduleSave()};if(selectionPointerId===e.pointerId)finishBuildSelection(e)});
+  renderer.domElement.addEventListener("pointercancel",e=>{buildPainting=false;paintHistoryStarted=false;if(selectionPointerId===e.pointerId)finishBuildSelection(e)});
+  window.addEventListener("keydown",e=>{
+    if(!gameStarted)return;if(e.code==="KeyB"){e.preventDefault();toggleBuildMode()}
+    if(buildMode&&e.code==="KeyR"){e.preventDefault();if(buildTool==="stamp"){stampRotation=(stampRotation+Math.PI/2)%(Math.PI*2);updateStampGhost();}else if(e.shiftKey)buildRotationX=(buildRotationX+Math.PI/12)%(Math.PI*2);else if(e.altKey)buildRotationZ=(buildRotationZ+Math.PI/12)%(Math.PI*2);else buildRotation=(buildRotation+Math.PI/12)%(Math.PI*2);updateGhost()}
+    if(buildMode&&e.code==="KeyX"){e.preventDefault();setBuildTool("delete")}if(buildMode&&e.code==="KeyC"){e.preventDefault();setBuildTool("copy")}
+    if(buildMode&&(e.ctrlKey||e.metaKey)&&e.code==="KeyZ"){e.preventDefault();undoBuild()}if(buildMode&&(e.ctrlKey||e.metaKey)&&e.code==="KeyY"){e.preventDefault();redoBuild()}
+  });
+  updateBuildToggles();
+}
+function startBuildPointer(e){
+  const r=renderer.domElement.getBoundingClientRect();selectionStart={x:e.clientX,y:e.clientY};selectionPointerId=e.pointerId;
+  if(buildTool!=="select")handleBuildPointer(e);
+  else{selectionBox=$("selectionBox");selectionBox.style.display="block";selectionBox.style.left=e.clientX+"px";selectionBox.style.top=e.clientY+"px";selectionBox.style.width="0px";selectionBox.style.height="0px";renderer.domElement.setPointerCapture?.(e.pointerId);}
+}
+function updateBuildSelectionBox(e){if(!selectionStart||selectionPointerId!==e.pointerId||buildTool!=="select")return;const x=Math.min(selectionStart.x,e.clientX),y=Math.min(selectionStart.y,e.clientY),w=Math.abs(e.clientX-selectionStart.x),h=Math.abs(e.clientY-selectionStart.y);selectionBox.style.left=x+"px";selectionBox.style.top=y+"px";selectionBox.style.width=w+"px";selectionBox.style.height=h+"px"}
+function finishBuildSelection(e){
+  if(buildTool!=="select"||!selectionStart)return;updateBuildSelectionBox(e);const x1=Math.min(selectionStart.x,e.clientX),x2=Math.max(selectionStart.x,e.clientX),y1=Math.min(selectionStart.y,e.clientY),y2=Math.max(selectionStart.y,e.clientY);
+  selectedBuildIds=[];for(const b of state.buildings){const v=new THREE.Vector3(b.x,b.y,b.z).project(camera);const sx=(v.x+1)*innerWidth/2,sy=(-v.y+1)*innerHeight/2;if(sx>=x1&&sx<=x2&&sy>=y1&&sy<=y2)selectedBuildIds.push(b.id)}
+  if(!selectedBuildIds.length){const m=pickBuildAtPointer();if(m)selectedBuildIds=[m.userData.buildId]}selectedBuildId=selectedBuildIds[0]||null;selectionStart=null;selectionPointerId=null;selectionBox.style.display="none";updateSelection();
+}
+bindBuildUI();
+
+/* =========================================================
+   RESIZE & VISIBILITY
+========================================================= */
+
+window.addEventListener("resize",()=>{
+  camera.aspect=innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight);
+});
+
+document.addEventListener("visibilitychange",()=>{
+  if(document.hidden && gameStarted && !paused){
+    paused=true;
+    pause.classList.remove("hidden");
+    saveGame(true);
+  }
+});
+
+window.addEventListener("beforeunload",()=>{
+  if(player){
+    state.position={
+      x:player.position.x,
+      y:player.position.y,
+      z:player.position.z
+    };
+  }
+  saveGame(true);
+});
+
+/* =========================================================
+   MAIN UPDATE LOOP
+========================================================= */
+
+function update(dt){
+  if(!gameStarted || paused) return;
+
+  updateMovement(dt);
+  updateCamera(dt);
+  if(buildMode) { updateGhost(); updateBuildSelectionBox({pointerId:selectionPointerId,clientX:selectionStart?.x||0,clientY:selectionStart?.y||0}); }
+  collectCoins(dt);
+  updateEffects(dt);
+  updateMiniGame(dt);
+  updateArea();
+  updateAchievements();
+
+  state.position={
+    x:player.position.x,
+    y:player.position.y,
+    z:player.position.z
+  };
+
+  if(currentArea!=="spawn"){
+    state.quests.explorer=Math.min(5, state.quests.explorer+dt*.015);
+  }
+
+  /* NPC Idle Animation */
+  for(const n of npcs){
+    n.group.rotation.y+=dt*.15;
+    const bob=Math.sin(performance.now()*.002+n.group.position.x)*.04;
+    n.group.position.y=bob;
+  }
+
+  /* Portal Animation */
+  for(const p of portals){
+    p.group.rotation.y+=dt*.8;
+  }
+}
+
+function loop(){
+  requestAnimationFrame(loop);
+  const dt=Math.min(clock.getDelta(), .05);
+  update(dt);
+  renderer.render(scene, camera);
+}
+
+/* =========================================================
+   BOOTSTRAP LOADING
+========================================================= */
+
+async function boot(){
+  const steps=[
+    "Menyiapkan renderer...",
+    "Membangun Spawn City...",
+    "Membangun Green Valley...",
+    "Membangun Crystal Cave...",
+    "Membangun Sky Island...",
+    "Membangun Fun Park...",
+    "Membangun Creative Flatland...",
+    "Membangun Tebing Multi-Ledge...",
+    "Membangun Stone Monolith...",
+    "Menempatkan NPC...",
+    "Menempatkan coin...",
+    "Menyiapkan karakter...",
+    "Memuat progress..."
+  ];
+
+  for(let i=0;i<steps.length;i++){
+    loadingText.textContent=steps[i];
+    progress.style.width=((i+1)/steps.length*100)+"%";
+    await new Promise(r=>setTimeout(r,60));
+  }
+
+  createWorld();
+  createPlayer();
+
+  checkDaily();
+  updateHUD();
+
+  loadingText.textContent="Selesai!";
+  await new Promise(r=>setTimeout(r,200));
+
+  loading.classList.add("hidden");
+  loop();
+}
+
+boot();
+
+window.claimDaily=claimDaily;
+
+window.addEventListener("error",e=>{
+  console.error("BLOCKVERSE ERROR:",e.error||e.message);
+});
+
+</script>
+</body>
+</html>
