@@ -502,7 +502,7 @@ button{
       <button class="secondary" id="worldBtn">🌎 DUNIA</button>
       <button class="secondary" id="questsBtn">🏆 AKTIVITAS</button>
       <button class="secondary" id="settingsBtn">⚙ PENGATURAN</button>
-      <button class="secondary" id="howBtn">❔ CARA BERMAIN</button>
+      <button class="secondary" id="howBtn">机制 CARA BERMAIN</button>
     </div>
 
     <p style="text-align:center;font-size:11px;margin-top:20px">
@@ -577,11 +577,7 @@ const CONFIG = {
   coinValue:10,
   buildGrid:1,
   minCameraDistance:3.5,
-  maxCameraDistance:35,
-  playerRadius:.65,
-  playerHeight:4,
-  maxStepHeight:.65,
-  collisionSkin:.04
+  maxCameraDistance:35
 };
 
 /* =========================================================
@@ -589,7 +585,7 @@ const CONFIG = {
 ========================================================= */
 
 const DEFAULT_STATE = {
-  version:3,
+  version:4,
 
   coins:0,
   xp:0,
@@ -653,9 +649,8 @@ const DEFAULT_STATE = {
 
 let state = structuredClone(DEFAULT_STATE);
 
-
 /* =========================================================
-   BUILD SYSTEM
+   BUILD SYSTEM CONFIG
 ========================================================= */
 const BUILD_BLOCKS={
  grass:{name:"Grass",category:"BASIC",color:0x4e9d53,size:[1,1,1]},
@@ -697,13 +692,12 @@ const BUILD_BLOCKS={
 };
 const BUILD_CATEGORIES=["BASIC","BUILDING","ROAD","DECORATION","SPECIAL"];
 const BUILD_CATEGORY_ICONS={BASIC:"🌱",BUILDING:"🏠",ROAD:"🛣️",DECORATION:"🌳",SPECIAL:"✨"};
+
 function isValidBuilding(v){return !!(v&&typeof v==="object"&&typeof v.id==="string"&&BUILD_BLOCKS[v.type]&&[v.x,v.y,v.z,v.rx,v.ry,v.rz].every(Number.isFinite))}
 function normalizeBuilding(v){return {id:v.id,type:v.type,x:Number(v.x)||0,y:Number(v.y)||0,z:Number(v.z)||0,rx:Number(v.rx)||0,ry:Number(v.ry)||0,rz:Number(v.rz)||0,sx:Number.isFinite(v.sx)?v.sx:1,sy:Number.isFinite(v.sy)?v.sy:1,sz:Number.isFinite(v.sz)?v.sz:1}}
 
 function normalizeState(raw){
-
   const s = structuredClone(DEFAULT_STATE);
-
   if(!raw || typeof raw!=="object") return s;
 
   if(Number.isFinite(raw.coins)) s.coins=Math.max(0,raw.coins);
@@ -755,7 +749,6 @@ function normalizeState(raw){
 }
 
 function loadGame(){
-
   try{
     const raw=localStorage.getItem(CONFIG.saveKey);
     if(raw){
@@ -769,7 +762,6 @@ function loadGame(){
 let saveTimer=null;
 
 function saveGame(silent=true){
-
   try{
     localStorage.setItem(CONFIG.saveKey,JSON.stringify(state));
     if(!silent) toast("💾 Progress tersimpan");
@@ -786,7 +778,7 @@ function scheduleSave(){
 loadGame();
 
 /* =========================================================
-   DOM
+   DOM ELEMENTS
 ========================================================= */
 
 const $=id=>document.getElementById(id);
@@ -847,43 +839,51 @@ const moveInput={
 let sprinting=false;
 
 /* =========================================================
-   BUILD RUNTIME
+   BUILD SYSTEM RUNTIME & CACHING
 ========================================================= */
 let buildMode=false,buildTool="select",selectedBuildType="stone",selectedBuildId=null;
 let ghostBuild=null,groundMesh=null,buildGroup=new THREE.Group(),buildRaycaster=new THREE.Raycaster();
 const terrainMeshes=[];
-const buildMeshes=new Map(); let buildUndo=[],buildRedo=[],buildRotation=0,buildSequence=0;
+const buildMeshes=new Map();
+let buildUndo=[],buildRedo=[],buildRotation=0,buildSequence=0;
 let buildPointer={x:.5,y:.5};
-function getBuildSize(type){return (BUILD_BLOCKS[type]||BUILD_BLOCKS.stone).size.slice()}
-const buildGeometryCache=new Map();
-const buildMaterialCache=new Map();
 
-function buildGeometry(type){
-  const key=type||"stone";
-  if(!buildGeometryCache.has(key)){
-    buildGeometryCache.set(key,new THREE.BoxGeometry(...getBuildSize(key)));
+// Cache geometry & materials untuk optimasi performa FPS
+const buildGeoCache = new Map();
+const buildMatCache = new Map();
+
+function getBuildSize(type){return (BUILD_BLOCKS[type]||BUILD_BLOCKS.stone).size.slice()}
+
+function getBuildGeometry(type){
+  const size = getBuildSize(type);
+  const key = size.join('_');
+  if(!buildGeoCache.has(key)){
+    buildGeoCache.set(key, new THREE.BoxGeometry(...size));
   }
-  return buildGeometryCache.get(key);
+  return buildGeoCache.get(key);
 }
 
 function buildMaterial(type,ghost=false){
   const d=BUILD_BLOCKS[type]||BUILD_BLOCKS.stone;
-  const key=(type||"stone")+":"+(ghost?"ghost":"solid");
-  if(buildMaterialCache.has(key)) return buildMaterialCache.get(key);
-  const material=new THREE.MeshStandardMaterial({
-    color:d.color,
-    roughness:.72,
-    metalness:0,
-    transparent:ghost||!!d.transparent,
-    opacity:ghost?.38:(d.transparent?.42:1),
-    depthWrite:!ghost
-  });
-  buildMaterialCache.set(key,material);
-  return material;
+  const key = `${type}_${ghost?'ghost':'solid'}`;
+  if(!buildMatCache.has(key)){
+    const mat = new THREE.MeshStandardMaterial({
+      color:d.color,
+      roughness:.72,
+      metalness:0,
+      transparent:ghost||!!d.transparent,
+      opacity:ghost?.42:(d.transparent?.42:1),
+      depthWrite:!ghost
+    });
+    buildMatCache.set(key, mat);
+  }
+  return buildMatCache.get(key);
 }
 
 function makeBuildMesh(data,ghost=false){
-  const m=new THREE.Mesh(buildGeometry(data.type),buildMaterial(data.type,ghost));
+  const geo = getBuildGeometry(data.type);
+  const mat = buildMaterial(data.type,ghost);
+  const m = new THREE.Mesh(geo, mat);
   m.position.set(data.x,data.y,data.z);
   m.rotation.set(data.rx||0,data.ry||0,data.rz||0);
   m.scale.set(data.sx||1,data.sy||1,data.sz||1);
@@ -894,10 +894,12 @@ function makeBuildMesh(data,ghost=false){
 }
 
 function rebuildBuildGroup(){
-  while(buildGroup.children.length) buildGroup.remove(buildGroup.children[0]);
+  while(buildGroup.children.length){
+    const m=buildGroup.children.pop();
+  }
   buildMeshes.clear();
   for(const b of state.buildings){
-    if(!isValidBuilding(b)) continue;
+    if(!isValidBuilding(b))continue;
     const m=makeBuildMesh(b);
     buildGroup.add(m);
     buildMeshes.set(b.id,m);
@@ -910,36 +912,228 @@ function removeGhost(){
     ghostBuild=null;
   }
 }
-function createGhost(){removeGhost();ghostBuild=makeBuildMesh({id:"ghost",type:selectedBuildType,x:0,y:.5,z:0,rx:0,ry:0,rz:0},true);scene.add(ghostBuild);ghostBuild.visible=false}
-function setBuildPointer(e){const r=renderer.domElement.getBoundingClientRect();buildPointer.x=((e.clientX-r.left)/r.width)*2-1;buildPointer.y=-((e.clientY-r.top)/r.height)*2+1}
-function buildTargets(){return [...terrainMeshes,...buildMeshes.values()].filter(Boolean)}
-function getPlacementTarget(){buildRaycaster.setFromCamera(buildPointer,camera);const hits=buildRaycaster.intersectObjects(buildTargets(),false);if(!hits.length)return null;const hit=hits[0],n=hit.face?.normal?.clone()||new THREE.Vector3(0,1,0),[w,h,d]=getBuildSize(selectedBuildType);let x=hit.point.x,y=hit.point.y,z=hit.point.z;if(hit.object===groundMesh||Math.abs(n.y)>.5)y=hit.point.y+h/2;else{x+=n.x*w/2;y+=n.y*h/2;z+=n.z*d/2}const snap=v=>Math.round(v/CONFIG.buildGrid)*CONFIG.buildGrid;return {x:snap(x),y:snap(y),z:snap(z)}}
-function updateGhost(){if(!buildMode||!["place","copy"].includes(buildTool))return;if(!ghostBuild)createGhost();const t=getPlacementTarget();if(!t){ghostBuild.visible=false;return}ghostBuild.visible=true;ghostBuild.position.set(t.x,t.y,t.z);ghostBuild.rotation.y=buildRotation}
-function nextBuildId(){buildSequence=Math.max(buildSequence+1,(state.buildSeq||0)+1);state.buildSeq=buildSequence;return "block_"+Date.now().toString(36)+"_"+buildSequence.toString(36)}
-function findBuilding(id){return state.buildings.find(b=>b.id===id)||null}
-function pushBuildHistory(){buildUndo.push(JSON.stringify(state.buildings));if(buildUndo.length>60)buildUndo.shift();buildRedo.length=0}
-function restoreBuildingsSnapshot(json){try{const a=JSON.parse(json);if(!Array.isArray(a))return;state.buildings=a.filter(isValidBuilding).map(normalizeBuilding);rebuildBuildGroup();selectedBuildId=null;hideSelection();scheduleSave()}catch(e){console.warn("Undo gagal",e)}}
-function undoBuild(){if(!buildUndo.length){toast("↶ Tidak ada perubahan.");return}buildRedo.push(JSON.stringify(state.buildings));restoreBuildingsSnapshot(buildUndo.pop());toast("↶ Undo")}
-function redoBuild(){if(!buildRedo.length){toast("↷ Tidak ada perubahan.");return}buildUndo.push(JSON.stringify(state.buildings));restoreBuildingsSnapshot(buildRedo.pop());toast("↷ Redo")}
-function placeBuilding(type=selectedBuildType,pos=null,source=null){if(!buildMode)return;const t=pos||getPlacementTarget();if(!t){toast("Arahkan kamera ke tanah atau block.");return}pushBuildHistory();const b={id:nextBuildId(),type,x:t.x,y:t.y,z:t.z,rx:source?.rx||0,ry:source?.ry??buildRotation,rz:source?.rz||0,sx:source?.sx||1,sy:source?.sy||1,sz:source?.sz||1};state.buildings.push(b);const m=makeBuildMesh(b);buildGroup.add(m);buildMeshes.set(b.id,m);selectedBuildId=b.id;state.quests.builder=Math.min(100,(state.quests.builder||0)+1);scheduleSave();updateSelection();toast("🧱 Block ditempatkan • GRATIS • UNLIMITED")}
-function pickBuildAtPointer(){buildRaycaster.setFromCamera(buildPointer,camera);const h=buildRaycaster.intersectObjects([...buildMeshes.values()],false);return h[0]?.object||null}
-function deleteSelectedBuilding(){const b=findBuilding(selectedBuildId);if(!b){toast("Pilih block buatan pemain.");return}pushBuildHistory();const m=buildMeshes.get(b.id);state.buildings=state.buildings.filter(v=>v.id!==b.id);if(m){buildGroup.remove(m);buildMeshes.delete(b.id)}selectedBuildId=null;hideSelection();scheduleSave();toast("🗑 Block dihapus")}
-function rotateSelectedBuilding(){const b=findBuilding(selectedBuildId);if(!b){toast("Pilih block buatan pemain.");return}pushBuildHistory();b.ry=(b.ry+Math.PI/2)%(Math.PI*2);const m=buildMeshes.get(b.id);if(m)m.rotation.y=b.ry;scheduleSave();updateSelection();toast("↻ Rotasi 90°")}
-function duplicateSelectedBuilding(){const b=findBuilding(selectedBuildId);if(!b){toast("Pilih block untuk disalin.");return}const p={x:b.x+1,y:b.y,z:b.z+1};placeBuilding(b.type,p,b)}
-function showSelection(){$("buildSelection").classList.add("show")}function hideSelection(){$("buildSelection").classList.remove("show")}
-function updateSelection(){const b=findBuilding(selectedBuildId);if(!b){hideSelection();return}const d=BUILD_BLOCKS[b.type];const deg=(Math.round((b.ry||0)*180/Math.PI)%360+360)%360;$("selectionTitle").textContent=d.name.toUpperCase();$("selectionDetails").textContent=`Position X: ${b.x.toFixed(1)}  Y: ${b.y.toFixed(1)}  Z: ${b.z.toFixed(1)}\nRotation ${deg}°`;showSelection()}
-function setBuildTool(t){buildTool=t;document.querySelectorAll(".buildBtn").forEach(b=>b.classList.remove("active"));const ids={select:"selectTool",place:"placeTool",delete:"deleteTool",rotate:"rotateTool",copy:"copyTool"};ids[t]&&$(ids[t])?.classList.add("active");if(t==="place"||t==="copy")createGhost();else removeGhost();updateBuildInfo()}
-function updateBuildInfo(){if(!buildMode){$("buildInfo").classList.remove("show");return}$("buildInfo").classList.add("show");$("buildInfo").textContent=({select:"🖐 SELECT — pilih block buatan pemain",place:"➕ PLACE — pilih block lalu arahkan kamera",delete:"🗑 DELETE — pilih block buatan pemain",rotate:"↻ ROTATE — pilih block untuk putar 90°",copy:"📋 COPY — pilih block untuk menggandakannya"})[buildTool]}
-function toggleBuildMode(force=null){if(!gameStarted||paused)return;buildMode=force===null?!buildMode:!!force;$("buildHud").classList.toggle("active",buildMode);$("buildZoom").classList.toggle("show",buildMode);$("buildBlocksPanel").classList.remove("show");if(buildMode){$("buildModeBtn").textContent="🧱 BUILD ✓";setBuildTool("select");toast("🧱 Build Mode aktif — semua block GRATIS & UNLIMITED")}else{$("buildModeBtn").textContent="🧱 BUILD";removeGhost();hideSelection();toast("🌎 Explore Mode")}updateBuildInfo()}
-function renderBuildLibrary(){const html=BUILD_CATEGORIES.map(cat=>{const items=Object.entries(BUILD_BLOCKS).filter(([,d])=>d.category===cat);return `<div class="buildCategory"><h3>${BUILD_CATEGORY_ICONS[cat]} ${cat} • FREE</h3><div class="buildGrid">${items.map(([id,d])=>`<button class="blockChoice ${id===selectedBuildType?"active":""}" data-build-type="${id}"><i class="blockSwatch" style="background:#${d.color.toString(16).padStart(6,"0")}"></i><span>${d.name}</span></button>`).join("")}</div></div>`}).join("");$("buildBlocksContent").innerHTML=html;document.querySelectorAll("[data-build-type]").forEach(b=>b.onclick=()=>{selectedBuildType=b.dataset.buildType;renderBuildLibrary();if(buildTool==="place"||buildTool==="copy")createGhost();toast("🧱 "+BUILD_BLOCKS[selectedBuildType].name+" dipilih • GRATIS")})}
-function saveBuildWorld(){if(player)state.position={x:player.position.x,y:player.position.y,z:player.position.z};saveGame(false);toast("💾 Dunia berhasil disimpan!")}
-function resetPlayerBuildings(){if(!state.buildings.length){toast("Tidak ada bangunan pemain.");return}if(!confirm("Hapus SEMUA bangunan yang dibuat pemain? Progress, player, quest, coin, dan dunia bawaan tetap aman."))return;pushBuildHistory();state.buildings=[];rebuildBuildGroup();selectedBuildId=null;hideSelection();scheduleSave();toast("🗑 Semua bangunan pemain dihapus")}
 
+function createGhost(){
+  removeGhost();
+  ghostBuild=makeBuildMesh({id:"ghost",type:selectedBuildType,x:0,y:.5,z:0,rx:0,ry:0,rz:0},true);
+  scene.add(ghostBuild);
+  ghostBuild.visible=false;
+}
+
+function setBuildPointer(e){
+  const r=renderer.domElement.getBoundingClientRect();
+  buildPointer.x=((e.clientX-r.left)/r.width)*2-1;
+  buildPointer.y=-((e.clientY-r.top)/r.height)*2+1;
+}
+
+function buildTargets(){return [...terrainMeshes,...buildMeshes.values()].filter(Boolean)}
+
+function getPlacementTarget(){
+  buildRaycaster.setFromCamera(buildPointer,camera);
+  const hits=buildRaycaster.intersectObjects(buildTargets(),false);
+  if(!hits.length)return null;
+  const hit=hits[0],n=hit.face?.normal?.clone()||new THREE.Vector3(0,1,0),[w,h,d]=getBuildSize(selectedBuildType);
+  let x=hit.point.x,y=hit.point.y,z=hit.point.z;
+  if(hit.object===groundMesh||Math.abs(n.y)>.5)y=hit.point.y+h/2;
+  else{x+=n.x*w/2;y+=n.y*h/2;z+=n.z*d/2}
+  const snap=v=>Math.round(v/CONFIG.buildGrid)*CONFIG.buildGrid;
+  return {x:snap(x),y:snap(y),z:snap(z)};
+}
+
+function updateGhost(){
+  if(!buildMode||!["place","copy"].includes(buildTool))return;
+  if(!ghostBuild)createGhost();
+  const t=getPlacementTarget();
+  if(!t){ghostBuild.visible=false;return}
+  ghostBuild.visible=true;
+  ghostBuild.position.set(t.x,t.y,t.z);
+  ghostBuild.rotation.y=buildRotation;
+}
+
+function nextBuildId(){
+  buildSequence=Math.max(buildSequence+1,(state.buildSeq||0)+1);
+  state.buildSeq=buildSequence;
+  return "block_"+Date.now().toString(36)+"_"+buildSequence.toString(36);
+}
+
+function findBuilding(id){return state.buildings.find(b=>b.id===id)||null}
+
+function pushBuildHistory(){
+  buildUndo.push(JSON.stringify(state.buildings));
+  if(buildUndo.length>60)buildUndo.shift();
+  buildRedo.length=0;
+}
+
+function restoreBuildingsSnapshot(json){
+  try{
+    const a=JSON.parse(json);
+    if(!Array.isArray(a))return;
+    state.buildings=a.filter(isValidBuilding).map(normalizeBuilding);
+    rebuildBuildGroup();
+    selectedBuildId=null;
+    hideSelection();
+    scheduleSave();
+  }catch(e){console.warn("Undo gagal",e)}
+}
+
+function undoBuild(){
+  if(!buildUndo.length){toast("↶ Tidak ada perubahan.");return}
+  buildRedo.push(JSON.stringify(state.buildings));
+  restoreBuildingsSnapshot(buildUndo.pop());
+  toast("↶ Undo");
+}
+
+function redoBuild(){
+  if(!buildRedo.length){toast("↷ Tidak ada perubahan.");return}
+  buildUndo.push(JSON.stringify(state.buildings));
+  restoreBuildingsSnapshot(buildRedo.pop());
+  toast("↷ Redo");
+}
+
+function placeBuilding(type=selectedBuildType,pos=null,source=null){
+  if(!buildMode)return;
+  const t=pos||getPlacementTarget();
+  if(!t){toast("Arahkan kamera ke tanah atau block.");return}
+  pushBuildHistory();
+  const b={id:nextBuildId(),type,x:t.x,y:t.y,z:t.z,rx:source?.rx||0,ry:source?.ry??buildRotation,rz:source?.rz||0,sx:source?.sx||1,sy:source?.sy||1,sz:source?.sz||1};
+  state.buildings.push(b);
+  const m=makeBuildMesh(b);
+  buildGroup.add(m);
+  buildMeshes.set(b.id,m);
+  selectedBuildId=b.id;
+  state.quests.builder=Math.min(100,(state.quests.builder||0)+1);
+  scheduleSave();
+  updateSelection();
+  toast("🧱 Block ditempatkan • GRATIS • UNLIMITED");
+}
+
+function pickBuildAtPointer(){
+  buildRaycaster.setFromCamera(buildPointer,camera);
+  const h=buildRaycaster.intersectObjects([...buildMeshes.values()],false);
+  return h[0]?.object||null;
+}
+
+function deleteSelectedBuilding(){
+  const b=findBuilding(selectedBuildId);
+  if(!b){toast("Pilih block buatan pemain.");return}
+  pushBuildHistory();
+  const m=buildMeshes.get(b.id);
+  state.buildings=state.buildings.filter(v=>v.id!==b.id);
+  if(m){
+    buildGroup.remove(m);
+    buildMeshes.delete(b.id);
+  }
+  selectedBuildId=null;
+  hideSelection();
+  scheduleSave();
+  toast("🗑 Block dihapus");
+}
+
+function rotateSelectedBuilding(){
+  const b=findBuilding(selectedBuildId);
+  if(!b){toast("Pilih block buatan pemain.");return}
+  pushBuildHistory();
+  b.ry=(b.ry+Math.PI/2)%(Math.PI*2);
+  const m=buildMeshes.get(b.id);
+  if(m)m.rotation.y=b.ry;
+  scheduleSave();
+  updateSelection();
+  toast("↻ Rotasi 90°");
+}
+
+function duplicateSelectedBuilding(){
+  const b=findBuilding(selectedBuildId);
+  if(!b){toast("Pilih block untuk disalin.");return}
+  const p={x:b.x+1,y:b.y,z:b.z+1};
+  placeBuilding(b.type,p,b);
+}
+
+function showSelection(){$("buildSelection").classList.add("show")}
+function hideSelection(){$("buildSelection").classList.remove("show")}
+
+function updateSelection(){
+  const b=findBuilding(selectedBuildId);
+  if(!b){hideSelection();return}
+  const d=BUILD_BLOCKS[b.type];
+  const deg=(Math.round((b.ry||0)*180/Math.PI)%360+360)%360;
+  $("selectionTitle").textContent=d.name.toUpperCase();
+  $("selectionDetails").textContent=`Position X: ${b.x.toFixed(1)}  Y: ${b.y.toFixed(1)}  Z: ${b.z.toFixed(1)}\nRotation ${deg}°`;
+  showSelection();
+}
+
+function setBuildTool(t){
+  buildTool=t;
+  document.querySelectorAll(".buildBtn").forEach(b=>b.classList.remove("active"));
+  const ids={select:"selectTool",place:"placeTool",delete:"deleteTool",rotate:"rotateTool",copy:"copyTool"};
+  ids[t]&&$(ids[t])?.classList.add("active");
+  if(t==="place"||t==="copy")createGhost();
+  else removeGhost();
+  updateBuildInfo();
+}
+
+function updateBuildInfo(){
+  if(!buildMode){$("buildInfo").classList.remove("show");return}
+  $("buildInfo").classList.add("show");
+  $("buildInfo").textContent=({select:"🖐 SELECT — pilih block buatan pemain",place:"➕ PLACE — pilih block lalu arahkan kamera",delete:"🗑 DELETE — pilih block buatan pemain",rotate:"↻ ROTATE — pilih block untuk putar 90°",copy:"📋 COPY — pilih block untuk menggandakannya"})[buildTool];
+}
+
+function toggleBuildMode(force=null){
+  if(!gameStarted||paused)return;
+  buildMode=force===null?!buildMode:!!force;
+  $("buildHud").classList.toggle("active",buildMode);
+  $("buildZoom").classList.toggle("show",buildMode);
+  $("buildBlocksPanel").classList.remove("show");
+  if(buildMode){
+    $("buildModeBtn").textContent="🧱 BUILD ✓";
+    setBuildTool("select");
+    toast("🧱 Build Mode aktif — semua block GRATIS & UNLIMITED");
+  }else{
+    $("buildModeBtn").textContent="🧱 BUILD";
+    removeGhost();
+    hideSelection();
+    toast("🌎 Explore Mode");
+  }
+  updateBuildInfo();
+}
+
+function renderBuildLibrary(){
+  const html=BUILD_CATEGORIES.map(cat=>{
+    const items=Object.entries(BUILD_BLOCKS).filter(([,d])=>d.category===cat);
+    return `<div class="buildCategory"><h3>${BUILD_CATEGORY_ICONS[cat]} ${cat} • FREE</h3><div class="buildGrid">${items.map(([id,d])=>`<button class="blockChoice ${id===selectedBuildType?"active":""}" data-build-type="${id}"><i class="blockSwatch" style="background:#${d.color.toString(16).padStart(6,"0")}"></i><span>${d.name}</span></button>`).join("")}</div></div>`
+  }).join("");
+  $("buildBlocksContent").innerHTML=html;
+  document.querySelectorAll("[data-build-type]").forEach(b=>b.onclick=()=>{
+    selectedBuildType=b.dataset.buildType;
+    renderBuildLibrary();
+    if(buildTool==="place"||buildTool==="copy")createGhost();
+    toast("🧱 "+BUILD_BLOCKS[selectedBuildType].name+" dipilih • GRATIS");
+  });
+}
+
+function saveBuildWorld(){
+  if(player)state.position={x:player.position.x,y:player.position.y,z:player.position.z};
+  saveGame(false);
+  toast("💾 Dunia berhasil disimpan!");
+}
+
+function resetPlayerBuildings(){
+  if(!state.buildings.length){toast("Tidak ada bangunan pemain.");return}
+  if(!confirm("Hapus SEMUA bangunan yang dibuat pemain? Progress, player, quest, coin, dan dunia bawaan tetap aman."))return;
+  pushBuildHistory();
+  state.buildings=[];
+  rebuildBuildGroup();
+  selectedBuildId=null;
+  hideSelection();
+  scheduleSave();
+  toast("🗑 Semua bangunan pemain dihapus");
+}
+
+/* =========================================================
+   RENDERER
+========================================================= */
 
 function createRenderer(){
-
   try{
-
     renderer=new THREE.WebGLRenderer({
       antialias:true,
       powerPreference:"high-performance"
@@ -950,19 +1144,14 @@ function createRenderer(){
     );
 
     renderer.setSize(innerWidth,innerHeight);
-
     renderer.shadowMap.enabled=true;
     renderer.shadowMap.type=THREE.PCFSoftShadowMap;
-
     renderer.outputColorSpace=THREE.SRGBColorSpace;
 
     document.body.appendChild(renderer.domElement);
 
   }catch(e){
-
-    loadingText.textContent=
-      "Browser tidak mendukung WebGL.";
-
+    loadingText.textContent="Browser tidak mendukung WebGL.";
     throw e;
   }
 }
@@ -971,7 +1160,6 @@ createRenderer();
 
 scene=new THREE.Scene();
 scene.background=new THREE.Color("#8ed9ff");
-
 scene.fog=new THREE.Fog("#8ed9ff",65,145);
 
 camera=new THREE.PerspectiveCamera(
@@ -987,21 +1175,13 @@ scene.add(world);
 world.add(dynamicWorld);
 
 /* =========================================================
-   LIGHT
+   LIGHTING
 ========================================================= */
 
-const hemi=new THREE.HemisphereLight(
-  0xdff5ff,
-  0x526040,
-  2.2
-);
+const hemi=new THREE.HemisphereLight(0xdff5ff,0x526040,2.2);
 scene.add(hemi);
 
-const sun=new THREE.DirectionalLight(
-  0xffffff,
-  3
-);
-
+const sun=new THREE.DirectionalLight(0xffffff,3);
 sun.position.set(45,70,35);
 sun.castShadow=true;
 
@@ -1014,7 +1194,7 @@ sun.shadow.camera.bottom=-90;
 scene.add(sun);
 
 /* =========================================================
-   MATERIAL HELPERS
+   MATERIAL & PRIMITIVE HELPERS
 ========================================================= */
 
 const mats={};
@@ -1033,7 +1213,6 @@ function mat(color,opts={}){
 }
 
 function box(w,h,d,color,x=0,y=0,z=0){
-
   const mesh=new THREE.Mesh(
     new THREE.BoxGeometry(w,h,d),
     mat(color)
@@ -1042,14 +1221,11 @@ function box(w,h,d,color,x=0,y=0,z=0){
   mesh.position.set(x,y,z);
   mesh.castShadow=true;
   mesh.receiveShadow=true;
-
   world.add(mesh);
-
   return mesh;
 }
 
 function cylinder(r,h,color,x=0,y=0,z=0){
-
   const mesh=new THREE.Mesh(
     new THREE.CylinderGeometry(r,r,h,12),
     mat(color)
@@ -1058,59 +1234,27 @@ function cylinder(r,h,color,x=0,y=0,z=0){
   mesh.position.set(x,y,z);
   mesh.castShadow=true;
   mesh.receiveShadow=true;
-
   world.add(mesh);
-
   return mesh;
 }
 
 /* =========================================================
-   WORLD HELPERS
+   WORLD CLEARING & BASE GENERATION
 ========================================================= */
 
-function buildMaterialCacheHas(material){
-  for(const cached of buildMaterialCache.values()){
-    if(cached===material) return true;
-  }
-  return false;
-}
-
 function clearWorld(){
-
   while(world.children.length){
-
     const child=world.children[world.children.length-1];
-
     if(child===dynamicWorld) break;
-
     world.remove(child);
-
     child.traverse(obj=>{
       if(obj.geometry) obj.geometry.dispose();
     });
   }
 
-  const cachedMaterials=new Set(Object.values(mats));
   while(dynamicWorld.children.length){
     const child=dynamicWorld.children[0];
     dynamicWorld.remove(child);
-
-    /* Player-built meshes use cached shared geometry/materials.
-       They are intentionally retained so rebuilding the world does
-       not leave the cache pointing at disposed Three.js resources. */
-    if(child===buildGroup) continue;
-
-    child.traverse(obj=>{
-      if(obj.geometry) obj.geometry.dispose();
-      if(obj.material){
-        const materials=Array.isArray(obj.material)?obj.material:[obj.material];
-        for(const material of materials){
-          if(!cachedMaterials.has(material) && !buildMaterialCacheHas(material)){
-            material.dispose();
-          }
-        }
-      }
-    });
   }
 
   coins.length=0;
@@ -1122,7 +1266,6 @@ function clearWorld(){
 }
 
 function addGround(){
-
   const ground=box(
     CONFIG.worldSize,
     1,
@@ -1141,39 +1284,19 @@ function addGround(){
 }
 
 function addRoad(x,z,w,d){
-
-  box(
-    w,
-    .08,
-    d,
-    0x424b5a,
-    x,
-    .04,
-    z
-  );
+  box(w, .08, d, 0x424b5a, x, .04, z);
 }
 
 function addTree(x,z,scale=1){
-
-  const baseY=terrainHeight(x,z);
-
-  cylinder(
-    .5*scale,
-    3*scale,
-    0x75482e,
-    x,
-    baseY+1.5*scale,
-    z
-  );
+  cylinder(.5*scale, 3*scale, 0x75482e, x, 1.5*scale, z);
 
   const crown=new THREE.Mesh(
     new THREE.DodecahedronGeometry(2.2*scale),
     mat(0x2e9d55)
   );
 
-  crown.position.set(x,baseY+4*scale,z);
+  crown.position.set(x,4*scale,z);
   crown.castShadow=true;
-
   world.add(crown);
 
   obstacles.push({
@@ -1183,28 +1306,9 @@ function addTree(x,z,scale=1){
 }
 
 function addHouse(x,z,color=0xe9edf3){
-
   box(7,4,7,color,x,2,z);
-
-  box(
-    8,
-    1.5,
-    8,
-    0xb63d4c,
-    x,
-    4.6,
-    z
-  );
-
-  box(
-    1.4,
-    2.4,
-    .2,
-    0x75452d,
-    x,
-    1.2,
-    z-3.6
-  );
+  box(8,1.5,8,0xb63d4c,x,4.6,z);
+  box(1.4,2.4,.2,0x75452d,x,1.2,z-3.6);
 
   obstacles.push({
     x,z,
@@ -1213,17 +1317,21 @@ function addHouse(x,z,color=0xe9edf3){
 }
 
 function addMountain(x,z,r=7,h=12){
-
   const m=new THREE.Mesh(
-    new THREE.ConeGeometry(r,h,6),
+    new THREE.ConeGeometry(r,h,8),
     mat(0x68798c)
   );
 
   m.position.set(x,h/2,z);
   m.castShadow=true;
   m.receiveShadow=true;
-
   world.add(m);
+
+  // Daftarkan gunung ke sistem collision agar pemain tidak menembus gunung
+  obstacles.push({
+    x,z,
+    radius:r*0.75
+  });
 }
 
 /* =========================================================
@@ -1231,7 +1339,6 @@ function addMountain(x,z,r=7,h=12){
 ========================================================= */
 
 function addCoin(x,y,z,value=10,area="spawn"){
-
   const mesh=new THREE.Mesh(
     new THREE.CylinderGeometry(.42,.42,.12,16),
     mat(0xffd84d,{metalness:.45,roughness:.25})
@@ -1254,12 +1361,10 @@ function addCoin(x,y,z,value=10,area="spawn"){
   };
 
   mesh.userData.coin=obj;
-
   coins.push(obj);
 }
 
 function createCoins(){
-
   const areas=[
     ["spawn",0,0],
     ["valley",-45,-5],
@@ -1269,15 +1374,13 @@ function createCoins(){
   ];
 
   for(const [area,cx,cz] of areas){
-
     for(let i=0;i<18;i++){
-
       const a=(i/18)*Math.PI*2;
       const r=6+(i%4)*2;
 
       addCoin(
         cx+Math.cos(a)*r,
-        area==="sky"?18.5:1,
+        area==="sky"?19.5:1,
         cz+Math.sin(a)*r,
         10,
         area
@@ -1287,7 +1390,7 @@ function createCoins(){
 }
 
 /* =========================================================
-   PORTALS
+   PORTALS & AREAS
 ========================================================= */
 
 const AREA_DATA={
@@ -1319,16 +1422,13 @@ const AREA_DATA={
 };
 
 function addPortal(area,x,z){
-
   const data=AREA_DATA[area];
-
   const g=new THREE.Group();
 
   const outer=new THREE.Mesh(
     new THREE.TorusGeometry(2.1,.25,10,32),
     mat(data.color,{emissive:data.color})
   );
-
   outer.rotation.x=Math.PI/2;
 
   const core=new THREE.Mesh(
@@ -1340,7 +1440,6 @@ function addPortal(area,x,z){
       side:THREE.DoubleSide
     })
   );
-
   core.rotation.x=Math.PI/2;
 
   g.add(outer,core);
@@ -1361,31 +1460,24 @@ function addPortal(area,x,z){
 ========================================================= */
 
 function addNPC(name,x,z,color,role){
-
   const g=new THREE.Group();
 
   const body=new THREE.Mesh(
     new THREE.BoxGeometry(1.3,1.8,1),
     mat(color)
   );
-
   body.position.y=1.7;
 
   const head=new THREE.Mesh(
     new THREE.BoxGeometry(1.25,1.25,1.25),
     mat(0xf0c49a)
   );
-
   head.position.y=3.15;
 
   g.add(body,head);
-
   g.position.set(x,0,z);
 
-  g.userData={
-    name,
-    role
-  };
+  g.userData={name,role};
 
   dynamicWorld.add(g);
 
@@ -1398,13 +1490,11 @@ function addNPC(name,x,z,color,role){
 }
 
 /* =========================================================
-   WORLD CREATION
+   WORLD INITIALIZATION
 ========================================================= */
 
 function createWorld(){
-
   clearWorld();
-
   addGround();
 
   /* Spawn */
@@ -1444,18 +1534,13 @@ function createWorld(){
     );
   }
 
-  box(
-    16,2,12,
-    0x26314a,
-    45,1,18
-  );
+  box(16,2,12,0x26314a,45,1,18);
 
   /* Fun Park */
   addRoad(45,-48,45,5);
 
   for(let i=0;i<8;i++){
     const angle=i*Math.PI/4;
-
     const x=45+Math.cos(angle)*12;
     const z=-48+Math.sin(angle)*12;
 
@@ -1465,7 +1550,6 @@ function createWorld(){
       new THREE.SphereGeometry(2.5,12,8),
       mat(i%2?0xff66b8:0xffdf58)
     );
-
     top.position.set(x,7.2,z);
     top.castShadow=true;
     world.add(top);
@@ -1476,7 +1560,6 @@ function createWorld(){
     new THREE.CylinderGeometry(22,16,3,8),
     mat(0x68b7ff)
   );
-
   island.position.set(0,17,62);
   island.castShadow=true;
   island.receiveShadow=true;
@@ -1486,19 +1569,15 @@ function createWorld(){
   world.add(island);
 
   for(let i=0;i<12;i++){
-
     const a=i*Math.PI*2/12;
-
     addTree(
       Math.cos(a)*12,
       62+Math.sin(a)*12,
       .65
     );
-
-    // adjust tree height naturally from ground; visual island trees
   }
 
-  /* portals: each is placed at its actual destination area */
+  /* Portals */
   addPortal("spawn",0,8);
   addPortal("valley",-45,8);
   addPortal("cave",45,8);
@@ -1511,7 +1590,6 @@ function createWorld(){
   addNPC("Luna",40,-43,0xa979ff,"Fun Park");
 
   createCoins();
-
   createTreasureSwitch();
 
   buildGroup=new THREE.Group();
@@ -1523,13 +1601,12 @@ function createWorld(){
 }
 
 /* =========================================================
-   SECRET
+   SECRET TREASURE
 ========================================================= */
 
 let treasureSwitch;
 
 function createTreasureSwitch(){
-
   treasureSwitch=new THREE.Group();
 
   const base=new THREE.Mesh(
@@ -1552,24 +1629,13 @@ function createTreasureSwitch(){
 }
 
 /* =========================================================
-   PLAYER
+   PLAYER CREATION
 ========================================================= */
 
-function disposePlayer(){
-  if(!player) return;
-  const rainbow=player.userData?.rainbow;
-  player.traverse(obj=>{
-    if(obj.geometry) obj.geometry.dispose();
-  });
-  if(rainbow?.material) rainbow.material.dispose();
-  scene.remove(player);
-  player=null;
-  playerVisual=null;
-}
-
 function createPlayer(){
-
-  if(player) disposePlayer();
+  if(player){
+    scene.remove(player);
+  }
 
   player=new THREE.Group();
   playerVisual=new THREE.Group();
@@ -1598,21 +1664,18 @@ function createPlayer(){
     new THREE.BoxGeometry(1.2,1.6,.8),
     mat(outfitColors[c.outfit]||outfitColors.classic)
   );
-
   body.position.y=1.65;
 
   const head=new THREE.Mesh(
     new THREE.BoxGeometry(1.25,1.25,1.25),
     mat(skinColors[c.skin]||skinColors.blue)
   );
-
   head.position.y=3.05;
 
   const leg1=new THREE.Mesh(
     new THREE.BoxGeometry(.48,1.2,.55),
     mat(0x26344e)
   );
-
   const leg2=leg1.clone();
 
   leg1.position.set(-.32,.6,0);
@@ -1622,7 +1685,6 @@ function createPlayer(){
     new THREE.BoxGeometry(.45,1.35,.55),
     mat(outfitColors[c.outfit]||outfitColors.classic)
   );
-
   const arm2=arm1.clone();
 
   arm1.position.set(-.85,1.7,0);
@@ -1637,96 +1699,70 @@ function createPlayer(){
     arm2
   );
 
-  /* face */
+  /* Face */
   if(c.face==="cool"){
-
     const glasses=new THREE.Mesh(
       new THREE.BoxGeometry(1.1,.23,.12),
       mat(0x151923)
     );
-
     glasses.position.set(0,3.1,-.64);
-
     playerVisual.add(glasses);
-
   }else if(c.face==="star"){
-
     const star=new THREE.Mesh(
       new THREE.OctahedronGeometry(.18),
       mat(0xffdf3e,{emissive:0xffc400})
     );
-
     star.position.set(0,3.65,-.67);
-
     playerVisual.add(star);
   }
 
-  /* hair */
+  /* Hair */
   if(c.hair==="spiky"){
-
     for(let i=-1;i<=1;i++){
-
       const h=new THREE.Mesh(
         new THREE.ConeGeometry(.18,.7,5),
         mat(0x3b241c)
       );
-
       h.position.set(i*.28,3.8,0);
       playerVisual.add(h);
     }
-
   }else if(c.hair==="cap"){
-
     const cap=new THREE.Mesh(
       new THREE.BoxGeometry(1.35,.35,1.35),
       mat(0x1e2b52)
     );
-
     cap.position.y=3.75;
-
     playerVisual.add(cap);
   }
 
-  /* accessory */
+  /* Accessories */
   if(c.accessory==="halo"){
-
     const halo=new THREE.Mesh(
       new THREE.TorusGeometry(.8,.09,8,24),
       mat(0xffdf55,{emissive:0xffb800})
     );
-
     halo.rotation.x=Math.PI/2;
     halo.position.y=4;
-
     playerVisual.add(halo);
   }
 
   if(c.accessory==="backpack"){
-
     const pack=new THREE.Mesh(
       new THREE.BoxGeometry(.75,1,.3),
       mat(0x243247)
     );
-
     pack.position.set(0,1.8,.55);
-
     playerVisual.add(pack);
   }
 
   if(c.effect==="rainbow"){
-
     const ring=new THREE.Mesh(
       new THREE.TorusGeometry(1.15,.07,8,32),
-      new THREE.MeshBasicMaterial({
-        color:0xffffff
-      })
+      new THREE.MeshBasicMaterial({color:0xffffff})
     );
-
     ring.rotation.x=Math.PI/2;
     ring.position.y=2;
-
     playerVisual.add(ring);
-
     player.userData.rainbow=ring;
   }
 
@@ -1740,11 +1776,10 @@ function createPlayer(){
 }
 
 /* =========================================================
-   AREA / TERRAIN
+   AREA & TERRAIN DETECT
 ========================================================= */
 
 function getAreaAt(x,z){
-
   const areas=[
     ["valley",-45,-5,35],
     ["cave",45,18,30],
@@ -1753,132 +1788,119 @@ function getAreaAt(x,z){
   ];
 
   for(const [id,cx,cz,r] of areas){
-
     const dx=x-cx;
     const dz=z-cz;
-
     if(dx*dx+dz*dz<r*r){
       return id;
     }
   }
-
   return "spawn";
 }
 
 function terrainHeight(x,z){
-
-  /* Sky island only within actual island radius */
   const dx=x;
   const dz=z-62;
-
   if(dx*dx+dz*dz<=20*20){
-    return 18.5;
+    return 18.5; // Ketinggian Sky Island
   }
-
-  return 0;
+  return 0; // Ketinggian dasar tanah
 }
 
 function updateArea(force=null){
-
   const id=force||getAreaAt(player.position.x,player.position.z);
-
   if(id!==currentArea){
-
     currentArea=id;
     toast("📍 "+AREA_DATA[id].name);
   }
-
   $("areaName").textContent=AREA_DATA[currentArea].name;
 }
 
 /* =========================================================
-   COLLISION
+   ADVANCED AABB COLLISION & STAND HEIGHT SYSTEM
 ========================================================= */
 
-function getBuildingBounds(b){
-  const [w,h,d]=getBuildSize(b.type);
-  const sx=Math.abs(Number.isFinite(b.sx)?b.sx:1);
-  const sy=Math.abs(Number.isFinite(b.sy)?b.sy:1);
-  const sz=Math.abs(Number.isFinite(b.sz)?b.sz:1);
-  const ry=b.ry||0;
-  const c=Math.abs(Math.cos(ry));
-  const sn=Math.abs(Math.sin(ry));
-  const halfW=(w*sx*c+d*sz*sn)/2;
-  const halfD=(w*sx*sn+d*sz*c)/2;
-  const halfH=h*sy/2;
+const PLAYER_RADIUS = 0.55;
+const PLAYER_HEIGHT = 1.8;
+const MAX_STEP_UP = 0.6; // Tinggi maksimal undakan/anak tangga yang bisa dipanjat otomatis
+
+function getBuildingAABB(b){
+  const [w, h, d] = getBuildSize(b.type);
+  const sx = b.sx || 1, sy = b.sy || 1, sz = b.sz || 1;
+  const hw = (w * sx) / 2;
+  const hh = (h * sy) / 2;
+  const hd = (d * sz) / 2;
   return {
-    minX:b.x-halfW,
-    maxX:b.x+halfW,
-    minY:b.y-halfH,
-    maxY:b.y+halfH,
-    minZ:b.z-halfD,
-    maxZ:b.z+halfD
+    minX: b.x - hw, maxX: b.x + hw,
+    minY: b.y - hh, maxY: b.y + hh,
+    minZ: b.z - hd, maxZ: b.z + hd,
+    topY: b.y + hh
   };
 }
 
-function buildingContainsXZ(b,x,z,extra=0){
-  const [w,,d]=getBuildSize(b.type);
-  const sx=Math.abs(Number.isFinite(b.sx)?b.sx:1);
-  const sz=Math.abs(Number.isFinite(b.sz)?b.sz:1);
-  const ry=-(b.ry||0);
-  const dx=x-b.x;
-  const dz=z-b.z;
-  const lx=dx*Math.cos(ry)-dz*Math.sin(ry);
-  const lz=dx*Math.sin(ry)+dz*Math.cos(ry);
-  return Math.abs(lx)<=w*sx/2+extra &&
-         Math.abs(lz)<=d*sz/2+extra;
-}
+// Menghitung tinggi pijakan kaki (termasuk tanah dasar & block pemain)
+function getGroundHeight(px, py, pz){
+  let highestGround = terrainHeight(px, pz);
 
-function getPlayerSupportHeight(x,z,feetY){
-  let support=terrainHeight(x,z);
   for(const b of state.buildings){
-    if(!isValidBuilding(b)) continue;
-    const bounds=getBuildingBounds(b);
-    if(bounds.maxY<support-.001) continue;
-    if(bounds.maxY>feetY+CONFIG.maxStepHeight+CONFIG.collisionSkin) continue;
-    if(buildingContainsXZ(b,x,z,CONFIG.playerRadius)){
-      support=Math.max(support,bounds.maxY);
+    const box = getBuildingAABB(b);
+    // Cek apakah proyeksi XZ pemain bersentuhan dengan block
+    if(px + PLAYER_RADIUS > box.minX && px - PLAYER_RADIUS < box.maxX &&
+       pz + PLAYER_RADIUS > box.minZ && pz - PLAYER_RADIUS < box.maxZ){
+      // Cek apakah permukaan atas block wajar dipijak (di bawah atau sejajar batas step-up)
+      if(box.topY <= py + MAX_STEP_UP + 0.1){
+        if(box.topY > highestGround){
+          highestGround = box.topY;
+        }
+      }
     }
   }
-  return support;
+
+  return highestGround;
 }
 
-function collidesAt(x,z,feetY=player?.position.y??0){
-  const limit=CONFIG.worldSize/2-2;
-  if(x<-limit || x>limit || z<-limit || z>limit) return true;
-
-  for(const o of obstacles){
-    const dx=x-o.x;
-    const dz=z-o.z;
-    if(dx*dx+dz*dz < (o.radius+CONFIG.playerRadius)**2) return true;
+// Deteksi tabrakan horizontal karakter vs dunia & block buatan
+function collidesAt(nx, ny, nz){
+  const limit = CONFIG.worldSize / 2 - 2;
+  if(nx < -limit || nx > limit || nz < -limit || nz > limit){
+    return true;
   }
 
-  for(const b of state.buildings){
-    if(!isValidBuilding(b)) continue;
-    const bounds=getBuildingBounds(b);
-    if(bounds.maxY < feetY-CONFIG.playerHeight) continue;
-    if(bounds.minY > feetY+CONFIG.playerHeight+CONFIG.maxStepHeight) continue;
-    if(!buildingContainsXZ(b,x,z,CONFIG.playerRadius)) continue;
+  // Cek tabrakan objek dekorasi dasar (Rumah, Pohon, Gunung)
+  for(const o of obstacles){
+    const dx = nx - o.x;
+    const dz = nz - o.z;
+    if(dx * dx + dz * dz < (o.radius + PLAYER_RADIUS) ** 2){
+      return true;
+    }
+  }
 
-    const top=bounds.maxY;
-    const canStep=top>=feetY-CONFIG.collisionSkin &&
-                  top<=feetY+CONFIG.maxStepHeight+CONFIG.collisionSkin;
-    if(!canStep) return true;
+  // Cek tabrakan AABB terhadap setiap block buatan pemain
+  const pMinY = ny;
+  const pMaxY = ny + PLAYER_HEIGHT;
+
+  for(const b of state.buildings){
+    const box = getBuildingAABB(b);
+
+    // Jika karakter berada pada rentang ketinggian vertikal block ini
+    if(pMaxY > box.minY && pMinY < box.maxY - 0.05){
+      // Jika tinggi permukaan block melebihi batas step-up (terlalu tinggi untuk dipanjat otomatis)
+      if(box.topY > ny + MAX_STEP_UP){
+        if(nx + PLAYER_RADIUS > box.minX && nx - PLAYER_RADIUS < box.maxX &&
+           nz + PLAYER_RADIUS > box.minZ && nz - PLAYER_RADIUS < box.maxZ){
+          return true; // Dinding/block menghalangi pergerakan
+        }
+      }
+    }
   }
 
   return false;
 }
 
-function getGroundHeightAt(x,z,feetY=player?.position.y??0){
-  return getPlayerSupportHeight(x,z,feetY);
-}
-
 /* =========================================================
-   MOVEMENT
+   MOVEMENT & PHYSICS UPDATE
 ========================================================= */
 
 function getMove(){
-
   let x=0;
   let y=0;
 
@@ -1891,7 +1913,6 @@ function getMove(){
   y+=moveInput.y;
 
   const len=Math.hypot(x,y);
-
   if(len>1){
     x/=len;
     y/=len;
@@ -1901,85 +1922,91 @@ function getMove(){
 }
 
 function updateMovement(dt){
-
   if(!player || paused || !gameStarted) return;
 
   const move=getMove();
-
   const speed=
-    sprinting||keys.ShiftLeft||keys.ShiftRight
+    (sprinting||keys.ShiftLeft||keys.ShiftRight)
     ?CONFIG.sprintSpeed
     :CONFIG.walkSpeed;
 
   const sin=Math.sin(camYaw);
   const cos=Math.cos(camYaw);
 
-  const dx=(move.x*cos + move.y*sin)*speed*dt;
-  const dz=(move.y*cos - move.x*sin)*speed*dt;
+  // Vektor gerakan relatif terhadap arah pandang kamera
+  const dx = (move.x * cos + move.y * sin) * speed * dt;
+  const dz = (-move.x * sin + move.y * cos) * speed * dt;
 
-  const currentY=player.position.y;
-  const nx=player.position.x+dx;
-  const nz=player.position.z+dz;
+  const currentY = player.position.y;
 
-  let nextX=player.position.x;
-  let nextZ=player.position.z;
-
-  if(!collidesAt(nx,player.position.z,currentY)) nextX=nx;
-  if(!collidesAt(nextX,nz,currentY)) nextZ=nz;
-
-  const ground=getGroundHeightAt(nextX,nextZ,currentY);
-
-  if(velocityY<=0 && currentY<=ground+CONFIG.maxStepHeight+CONFIG.collisionSkin){
-    player.position.x=nextX;
-    player.position.z=nextZ;
-    player.position.y=ground;
-    velocityY=0;
-    onGround=true;
-  }else{
-    player.position.x=nextX;
-    player.position.z=nextZ;
-    onGround=false;
-    velocityY-=CONFIG.gravity*dt;
-    const previousY=player.position.y;
-    player.position.y+=velocityY*dt;
-
-    if(velocityY<=0){
-      const landingGround=getGroundHeightAt(player.position.x,player.position.z,previousY);
-      if(player.position.y<=landingGround){
-        player.position.y=landingGround;
-        velocityY=0;
-        onGround=true;
-      }
+  // Gerakan X & Z independen dengan deteksi collision presisi
+  if(dx !== 0){
+    const nx = player.position.x + dx;
+    if(!collidesAt(nx, currentY, player.position.z)){
+      player.position.x = nx;
     }
   }
 
-  if(player.position.y<-12) respawn();
+  if(dz !== 0){
+    const nz = player.position.z + dz;
+    if(!collidesAt(player.position.x, currentY, nz)){
+      player.position.z = nz;
+    }
+  }
 
-  animatePlayer(dt,move);
+  // Hitung ketinggian pijakan fisik (tanah/block)
+  const ground = getGroundHeight(player.position.x, player.position.y, player.position.z);
+
+  if(player.position.y <= ground + 0.1 && velocityY <= 0){
+    player.position.y = ground;
+    velocityY = 0;
+    onGround = true;
+  }else{
+    onGround = false;
+    velocityY -= CONFIG.gravity * dt;
+    player.position.y += velocityY * dt;
+
+    // Mendarat di permukaan pijakan
+    if(player.position.y <= ground){
+      player.position.y = ground;
+      velocityY = 0;
+      onGround = true;
+    }
+  }
+
+  // Pemulihan jika jatuh keluar dari world
+  if(player.position.y < -15){
+    respawn();
+  }
+
+  // Mengarahkan rotasi body karakter menghadap ke arah jalan secara mulus
+  const moving = Math.hypot(dx, dz) > 0.001;
+  if(moving){
+    const targetAngle = Math.atan2(dx, dz);
+    let diff = targetAngle - playerVisual.rotation.y;
+    while(diff < -Math.PI) diff += Math.PI * 2;
+    while(diff > Math.PI) diff -= Math.PI * 2;
+    playerVisual.rotation.y += diff * Math.min(1.0, dt * 15);
+  }
+
+  animatePlayer(dt, moving);
 }
+
 function jump(){
-
   if(!gameStarted || paused) return;
-
   if(onGround){
-
     velocityY=CONFIG.jumpForce;
     onGround=false;
   }
 }
 
 function respawn(){
-
-  const x=state.checkpoint.x;
-  const z=state.checkpoint.z;
-  const y=Math.max(
+  player.position.set(
+    state.checkpoint.x,
     state.checkpoint.y,
-    getGroundHeightAt(x,z,state.checkpoint.y)
+    state.checkpoint.z
   );
-  player.position.set(x,y,z);
   velocityY=0;
-  onGround=true;
-
   toast("↩ Kembali ke checkpoint");
 }
 
@@ -1987,42 +2014,25 @@ function respawn(){
    PLAYER ANIMATION
 ========================================================= */
 
-function animatePlayer(dt,move){
-
+function animatePlayer(dt, moving){
   if(!playerVisual) return;
 
-  const moving=Math.hypot(move.x,move.y)>.1;
-
-  playerVisual.rotation.y+=
-    moving
-    ?((move.x*.2)*dt)
-    :0;
-
   const t=performance.now()*.012;
-
-  const swing=moving
-    ?Math.sin(t*1.5)*.35
-    :0;
-
+  const swing=moving ? Math.sin(t*1.5)*.35 : 0;
   const legs=playerVisual.children;
 
   if(legs[2]) legs[2].rotation.x=swing;
   if(legs[3]) legs[3].rotation.x=-swing;
 
   if(player.userData.rainbow){
-
     player.userData.rainbow.rotation.z+=dt*2;
-
     const hue=(performance.now()*.0002)%1;
-
-    player.userData.rainbow.material.color.setHSL(
-      hue,.9,.6
-    );
+    player.userData.rainbow.material.color.setHSL(hue,.9,.6);
   }
 }
 
 /* =========================================================
-   CAMERA
+   CAMERA CONTROL
 ========================================================= */
 
 function updateCamera(dt){
@@ -2039,7 +2049,7 @@ function updateCamera(dt){
 }
 
 /* =========================================================
-   CAMERA POINTER
+   CAMERA POINTER & GESTURE CONTROLS
 ========================================================= */
 
 let cameraPointerId=null;
@@ -2049,20 +2059,15 @@ let lastPointerY=0;
 const cameraZone=$("cameraZone");
 
 cameraZone.addEventListener("pointerdown",e=>{
-
-  if(!gameStarted || paused || buildMode) return;
-
+  if(!gameStarted || paused || buildMode || pinching) return;
   cameraPointerId=e.pointerId;
   lastPointerX=e.clientX;
   lastPointerY=e.clientY;
-
   cameraZone.setPointerCapture(e.pointerId);
 });
 
 cameraZone.addEventListener("pointermove",e=>{
-
-  if(e.pointerId!==cameraPointerId) return;
-
+  if(e.pointerId!==cameraPointerId || pinching) return;
   const dx=e.clientX-lastPointerX;
   const dy=e.clientY-lastPointerY;
 
@@ -2071,12 +2076,7 @@ cameraZone.addEventListener("pointermove",e=>{
 
   camYaw-=dx*.008;
   camPitch+=dy*.006;
-
-  camPitch=THREE.MathUtils.clamp(
-    camPitch,
-    -.05,
-    1.25
-  );
+  camPitch=THREE.MathUtils.clamp(camPitch,-.05,1.25);
 });
 
 cameraZone.addEventListener("pointerup",e=>{
@@ -2091,16 +2091,46 @@ cameraZone.addEventListener("pointercancel",e=>{
   }
 });
 
+/* Mobile Pinch Zoom */
+const activeTouches=new Map();
+let pinchStartDistance=0,pinchStartCamera=8,pinching=false;
 
-/* Mobile pinch zoom */
-const activeTouches=new Map();let pinchStartDistance=0,pinchStartCamera=8,pinching=false;
-function touchDistance(){const a=[...activeTouches.values()];return a.length<2?0:Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y)}
-cameraZone.addEventListener("pointerdown",e=>{if(e.pointerType!=="mouse"){activeTouches.set(e.pointerId,{x:e.clientX,y:e.clientY});if(activeTouches.size===2){pinching=true;cameraPointerId=null;pinchStartDistance=touchDistance();pinchStartCamera=camDistance}}});
-cameraZone.addEventListener("pointermove",e=>{if(e.pointerType!=="mouse"&&activeTouches.has(e.pointerId)){activeTouches.set(e.pointerId,{x:e.clientX,y:e.clientY});if(pinching){const d=touchDistance();camDistance=THREE.MathUtils.clamp(pinchStartCamera-(d-pinchStartDistance)*.025,CONFIG.minCameraDistance,CONFIG.maxCameraDistance)}}});
-function endTouch(e){activeTouches.delete(e.pointerId);if(activeTouches.size<2)pinching=false}
-cameraZone.addEventListener("pointerup",endTouch);cameraZone.addEventListener("pointercancel",endTouch);
+function touchDistance(){
+  const a=[...activeTouches.values()];
+  return a.length<2?0:Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);
+}
 
-/* Desktop mouse */
+cameraZone.addEventListener("pointerdown",e=>{
+  if(e.pointerType!=="mouse"){
+    activeTouches.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(activeTouches.size===2){
+      pinching=true;
+      cameraPointerId=null;
+      pinchStartDistance=touchDistance();
+      pinchStartCamera=camDistance;
+    }
+  }
+});
+
+cameraZone.addEventListener("pointermove",e=>{
+  if(e.pointerType!=="mouse"&&activeTouches.has(e.pointerId)){
+    activeTouches.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(pinching){
+      const d=touchDistance();
+      camDistance=THREE.MathUtils.clamp(pinchStartCamera-(d-pinchStartDistance)*.025,CONFIG.minCameraDistance,CONFIG.maxCameraDistance);
+    }
+  }
+});
+
+function endTouch(e){
+  activeTouches.delete(e.pointerId);
+  if(activeTouches.size<2)pinching=false;
+}
+
+cameraZone.addEventListener("pointerup",endTouch);
+cameraZone.addEventListener("pointercancel",endTouch);
+
+/* Desktop Mouse Camera Drag */
 let mouseDown=false;
 
 renderer.domElement.addEventListener("mousedown",e=>{
@@ -2112,16 +2142,12 @@ window.addEventListener("mouseup",()=>{
 });
 
 window.addEventListener("mousemove",e=>{
-
   if(!mouseDown || !gameStarted || paused || buildMode) return;
-
   camYaw-=e.movementX*.006;
   camPitch+=e.movementY*.004;
-
-  camPitch=THREE.MathUtils.clamp(
-    camPitch,-.05,1.25
-  );
+  camPitch=THREE.MathUtils.clamp(camPitch,-.05,1.25);
 });
+
 renderer.domElement.addEventListener("wheel",e=>{
   if(!gameStarted||paused)return;
   e.preventDefault();
@@ -2129,7 +2155,7 @@ renderer.domElement.addEventListener("wheel",e=>{
 },{passive:false});
 
 /* =========================================================
-   JOYSTICK
+   JOYSTICK VIRTUAL
 ========================================================= */
 
 const joystick=$("joystick");
@@ -2138,37 +2164,28 @@ const stick=$("stick");
 let joystickPointer=null;
 
 joystick.addEventListener("pointerdown",e=>{
-
   joystickPointer=e.pointerId;
-
   joystick.setPointerCapture(e.pointerId);
-
   updateJoystick(e);
 });
 
 joystick.addEventListener("pointermove",e=>{
-
   if(e.pointerId===joystickPointer){
     updateJoystick(e);
   }
 });
 
 function updateJoystick(e){
-
   const r=joystick.getBoundingClientRect();
-
   const cx=r.left+r.width/2;
   const cy=r.top+r.height/2;
 
   let dx=e.clientX-cx;
   let dy=e.clientY-cy;
-
   const max=42;
 
   const len=Math.hypot(dx,dy);
-
   if(len>max){
-
     dx=dx/len*max;
     dy=dy/len*max;
   }
@@ -2181,12 +2198,9 @@ function updateJoystick(e){
 }
 
 function resetJoystick(){
-
   joystickPointer=null;
-
   stick.style.left="50%";
   stick.style.top="50%";
-
   moveInput.x=0;
   moveInput.y=0;
 }
@@ -2199,7 +2213,6 @@ joystick.addEventListener("pointercancel",resetJoystick);
 ========================================================= */
 
 function bindHoldButton(el,down,up=()=>{}){
-
   el.addEventListener("pointerdown",e=>{
     e.preventDefault();
     down();
@@ -2235,7 +2248,6 @@ $("actionBtn").addEventListener("pointerdown",e=>{
 ========================================================= */
 
 window.addEventListener("keydown",e=>{
-
   keys[e.code]=true;
 
   if(e.code==="Space"){
@@ -2244,7 +2256,6 @@ window.addEventListener("keydown",e=>{
   }
 
   if(e.code==="Escape"){
-
     if(dialog.classList.contains("hidden")===false){
       closeDialog();
     }else if(panelOverlay.classList.contains("hidden")===false){
@@ -2260,67 +2271,37 @@ window.addEventListener("keyup",e=>{
 });
 
 /* =========================================================
-   INTERACTION
+   INTERACTION SYSTEM
 ========================================================= */
 
 function distanceXZ(a,b){
-
   const dx=a.x-b.x;
   const dz=a.z-b.z;
-
   return Math.hypot(dx,dz);
 }
 
 function interact(){
-
   if(!gameStarted || paused) return;
 
-  /* NPC */
+  /* NPC Interaksi */
   for(const n of npcs){
-
-    if(
-      distanceXZ(
-        player.position,
-        n.group.position
-      )<3
-    ){
-
-      showDialog(
-        n.name,
-        npcText(n.role)
-      );
-
+    if(distanceXZ(player.position, n.group.position)<3){
+      showDialog(n.name, npcText(n.role));
       return;
     }
   }
 
-  /* portal */
+  /* Portal Teleport */
   for(const p of portals){
-
-    if(
-      distanceXZ(
-        player.position,
-        p.group.position
-      )<3
-    ){
-
+    if(distanceXZ(player.position, p.group.position)<3){
       teleportTo(p.area);
-
       return;
     }
   }
 
-  /* treasure */
-  if(
-    treasureSwitch &&
-    distanceXZ(
-      player.position,
-      treasureSwitch.position
-    )<3
-  ){
-
+  /* Rahasia Harta */
+  if(treasureSwitch && distanceXZ(player.position, treasureSwitch.position)<3){
     activateTreasure();
-
     return;
   }
 
@@ -2328,112 +2309,80 @@ function interact(){
 }
 
 function npcText(role){
-
   if(role==="Guide"){
     return "Selamat datang di BLOCKVERSE!\n\nSemua area sudah terbuka. Tidak ada level requirement. Jelajahi dunia, kumpulkan coins, gunakan shop, ubah karakter, dan bersenang-senang.";
   }
-
   if(role==="Builder"){
     return "Dunia ini adalah sandbox. Kamu bebas bergerak dan bereksperimen tanpa harus menyelesaikan quest terlebih dahulu.";
   }
-
   return "Fun Park punya mini-game Coin Rush. Kumpulkan coin sebanyak mungkin sebelum waktunya habis!";
 }
 
 function teleportTo(area){
-
   const d=AREA_DATA[area];
-
   let x=d.x;
   let z=d.z;
 
-  if(area==="spawn"){
-    x=0;
-    z=8;
-  }else if(area==="valley"){
-    x=-45;
-    z=8;
-  }else if(area==="cave"){
-    x=45;
-    z=8;
-  }else if(area==="sky"){
-    x=0;
-    z=62;
-  }else if(area==="park"){
-    x=45;
-    z=-35;
-  }
+  if(area==="spawn"){ x=0; z=8; }
+  else if(area==="valley"){ x=-45; z=8; }
+  else if(area==="cave"){ x=45; z=8; }
+  else if(area==="sky"){ x=0; z=62; }
+  else if(area==="park"){ x=45; z=-35; }
 
-  const spawnY=getGroundHeightAt(x,z,terrainHeight(x,z));
-  player.position.set(x,spawnY,z);
-  velocityY=0;
-  onGround=true;
+  const targetY = getGroundHeight(x, 0, z);
+
+  player.position.set(x, targetY, z);
 
   state.checkpoint={
     area,
     x,
-    y:spawnY,
+    y:targetY,
     z
   };
 
   updateArea(area);
   scheduleSave();
-
   toast("🚀 Teleport ke "+d.name);
 }
 
 /* =========================================================
-   TREASURE
+   TREASURE ACTIVATION
 ========================================================= */
 
 function activateTreasure(){
-
   if(state.quests.treasure){
     toast("Treasure sudah ditemukan.");
     return;
   }
 
   state.quests.treasure=true;
-
   addCoins(250);
   addXP(100);
-
   unlockAchievement("treasure");
-
   treasureSwitch.visible=false;
 
   toast("💎 Harta rahasia ditemukan! +250 Coins");
-
   scheduleSave();
 }
 
 /* =========================================================
-   ECONOMY
+   ECONOMY SYSTEM
 ========================================================= */
 
 function addCoins(amount){
-
-  const gain=Number.isFinite(amount)?Math.floor(amount):0;
-  state.coins=Math.min(
-    Number.MAX_SAFE_INTEGER,
-    Math.max(0,state.coins+gain)
-  );
-
+  state.coins=Math.max(0, state.coins+Math.floor(amount));
+  state.quests.collector=Math.min(100, state.quests.collector+Math.max(0,amount>0?1:0));
   updateHUD();
   scheduleSave();
 }
 
 function addXP(amount){
-
   state.xp+=Math.max(0,amount);
 
   while(state.xp>=xpRequired()){
-
     state.xp-=xpRequired();
     state.level++;
-
     addCoins(50);
-
     toast("⭐ LEVEL UP! Level "+state.level);
   }
 
@@ -2442,7 +2391,6 @@ function addXP(amount){
 }
 
 function xpRequired(){
-
   return 100+(state.level-1)*50;
 }
 
@@ -2451,59 +2399,38 @@ function xpRequired(){
 ========================================================= */
 
 function collectCoins(dt){
-
   for(const c of coins){
-
     if(c.collected || !c.mesh.visible) continue;
 
     c.mesh.rotation.y+=dt*3;
 
-    const d=distanceXZ(
-      player.position,
-      c.mesh.position
-    );
-
-    const vertical=
-      Math.abs(player.position.y-c.mesh.position.y)<2.5;
+    const d=distanceXZ(player.position, c.mesh.position);
+    const vertical=Math.abs(player.position.y-c.mesh.position.y)<2.5;
 
     if(d<1.5 && vertical){
-
       c.collected=true;
       c.mesh.visible=false;
 
       if(miniGameActive){
-
         coinRushCoins++;
         $("miniScore").textContent=coinRushCoins;
-
       }else{
-
         addCoins(c.value);
         addXP(5);
-
-        floatingText(
-          "+"+c.value,
-          c.mesh.position
-        );
+        floatingText("+"+c.value, c.mesh.position);
       }
 
-      state.quests.collector=
-        Math.min(
-          100,
-          state.quests.collector+1
-        );
+      state.quests.collector=Math.min(100, state.quests.collector+1);
     }
   }
 }
 
 /* =========================================================
-   QUEST / ACTIVITY
+   QUESTS & ACHIEVEMENTS
 ========================================================= */
 
 function unlockAchievement(id){
-
   if(state.achievements.includes(id)) return;
-
   state.achievements.push(id);
 
   const names={
@@ -2514,48 +2441,38 @@ function unlockAchievement(id){
     rush:"⚡ Coin Rush Master"
   };
 
-  toast(
-    "🏆 Achievement: "+
-    (names[id]||id)
-  );
-
+  toast("🏆 Achievement: "+(names[id]||id));
   scheduleSave();
 }
 
 function updateAchievements(){
-
   if(state.quests.explorer>=5){
     unlockAchievement("explorer");
   }
-
   if(state.quests.collector>=50){
     unlockAchievement("collector");
   }
-
   if(state.level>=10){
     unlockAchievement("level10");
   }
 }
 
 /* =========================================================
-   FLOATING TEXT / PARTICLES
+   FLOATING TEXT & EFFECTS
 ========================================================= */
 
 function floatingText(text,pos){
-
   const canvas=document.createElement("canvas");
   canvas.width=256;
   canvas.height=64;
 
   const ctx=canvas.getContext("2d");
-
   ctx.font="bold 38px Arial";
   ctx.fillStyle="#ffffff";
   ctx.textAlign="center";
   ctx.fillText(text,128,44);
 
   const texture=new THREE.CanvasTexture(canvas);
-
   const sprite=new THREE.Sprite(
     new THREE.SpriteMaterial({
       map:texture,
@@ -2564,7 +2481,6 @@ function floatingText(text,pos){
   );
 
   sprite.scale.set(3,.75,1);
-
   sprite.position.copy(pos);
   sprite.position.y+=1;
 
@@ -2577,27 +2493,18 @@ function floatingText(text,pos){
 }
 
 function updateEffects(dt){
-
   for(let i=effects.length-1;i>=0;i--){
-
     const e=effects[i];
-
     e.life-=dt;
-
     e.object.position.y+=dt*1.5;
-    e.object.material.opacity=
-      Math.max(0,e.life);
+    e.object.material.opacity=Math.max(0,e.life);
 
     if(e.life<=0){
-
       dynamicWorld.remove(e.object);
-
       if(e.object.material.map){
         e.object.material.map.dispose();
       }
-
       e.object.material.dispose();
-
       effects.splice(i,1);
     }
   }
@@ -2608,155 +2515,59 @@ function updateEffects(dt){
 ========================================================= */
 
 const SHOP_ITEMS=[
-  {
-    id:"skin_red",
-    name:"Skin Merah",
-    type:"skin",
-    value:"red",
-    price:100
-  },
-  {
-    id:"skin_green",
-    name:"Skin Hijau",
-    type:"skin",
-    value:"green",
-    price:100
-  },
-  {
-    id:"skin_purple",
-    name:"Skin Ungu",
-    type:"skin",
-    value:"purple",
-    price:150
-  },
-  {
-    id:"skin_yellow",
-    name:"Skin Kuning",
-    type:"skin",
-    value:"yellow",
-    price:150
-  },
-  {
-    id:"outfit_explorer",
-    name:"Explorer",
-    type:"outfit",
-    value:"explorer",
-    price:200
-  },
-  {
-    id:"outfit_ninja",
-    name:"Ninja",
-    type:"outfit",
-    value:"ninja",
-    price:300
-  },
-  {
-    id:"outfit_royal",
-    name:"Royal",
-    type:"outfit",
-    value:"royal",
-    price:500
-  },
-  {
-    id:"outfit_sports",
-    name:"Sports",
-    type:"outfit",
-    value:"sports",
-    price:250
-  },
-  {
-    id:"hair_spiky",
-    name:"Spiky Hair",
-    type:"hair",
-    value:"spiky",
-    price:150
-  },
-  {
-    id:"hair_cap",
-    name:"Cap",
-    type:"hair",
-    value:"cap",
-    price:150
-  },
-  {
-    id:"accessory_halo",
-    name:"Halo",
-    type:"accessory",
-    value:"halo",
-    price:350
-  },
-  {
-    id:"accessory_backpack",
-    name:"Backpack",
-    type:"accessory",
-    value:"backpack",
-    price:200
-  },
-  {
-    id:"effect_rainbow",
-    name:"Rainbow Effect",
-    type:"effect",
-    value:"rainbow",
-    price:700
-  }
+  { id:"skin_red", name:"Skin Merah", type:"skin", value:"red", price:100 },
+  { id:"skin_green", name:"Skin Hijau", type:"skin", value:"green", price:100 },
+  { id:"skin_purple", name:"Skin Ungu", type:"skin", value:"purple", price:150 },
+  { id:"skin_yellow", name:"Skin Kuning", type:"skin", value:"yellow", price:150 },
+  { id:"outfit_explorer", name:"Explorer", type:"outfit", value:"explorer", price:200 },
+  { id:"outfit_ninja", name:"Ninja", type:"outfit", value:"ninja", price:300 },
+  { id:"outfit_royal", name:"Royal", type:"outfit", value:"royal", price:500 },
+  { id:"outfit_sports", name:"Sports", type:"outfit", value:"sports", price:250 },
+  { id:"hair_spiky", name:"Spiky Hair", type:"hair", value:"spiky", price:150 },
+  { id:"hair_cap", name:"Cap", type:"hair", value:"cap", price:150 },
+  { id:"accessory_halo", name:"Halo", type:"accessory", value:"halo", price:350 },
+  { id:"accessory_backpack", name:"Backpack", type:"accessory", value:"backpack", price:200 },
+  { id:"effect_rainbow", name:"Rainbow Effect", type:"effect", value:"rainbow", price:700 }
 ];
 
 function buyItem(item){
-
   if(state.inventory.includes(item.id)){
-
     equipItem(item);
     return;
   }
 
   if(state.coins<item.price){
-
     toast("🪙 Coins belum cukup.");
     return;
   }
 
   state.coins-=item.price;
-
   state.inventory.push(item.id);
-
   equipItem(item);
 
   toast("🛒 "+item.name+" dibeli!");
-
   scheduleSave();
   updateHUD();
   showShop();
 }
 
 function equipItem(item){
-
   state.customization[item.type]=item.value;
-
   createPlayer();
-
   toast("✨ "+item.name+" digunakan.");
-
   scheduleSave();
 }
 
 function showShop(){
-
   const html=`
     <div class="closeRow">
       <h1>🛒 Shop</h1>
       <button class="close" onclick="window.closePanel()">✕</button>
     </div>
-
-    <p>
-      Semua item tersedia untuk dibeli menggunakan Coins.
-      Tidak ada item yang dikunci berdasarkan level.
-    </p>
-
+    <p>Semua item tersedia untuk dibeli menggunakan Coins.</p>
     <div class="cards">
       ${SHOP_ITEMS.map(item=>{
-
         const owned=state.inventory.includes(item.id);
-
         return `
           <div class="card">
             <h3>${item.name}</h3>
@@ -2768,7 +2579,6 @@ function showShop(){
             </button>
           </div>
         `;
-
       }).join("")}
     </div>
   `;
@@ -2780,34 +2590,18 @@ function showShop(){
 window.shopAction=buyItem;
 
 /* =========================================================
-   CHARACTER
+   CHARACTER CUSTOMIZATION
 ========================================================= */
 
 function showCharacter(){
-
-  const faces=[
-    ["happy","🙂"],
-    ["cool","😎"],
-    ["star","⭐"]
-  ];
-
-  const skins=[
-    ["blue","Blue"],
-    ["red","Red"],
-    ["green","Green"],
-    ["purple","Purple"],
-    ["yellow","Yellow"]
-  ];
+  const faces=[["happy","🙂"],["cool","😎"],["star","⭐"]];
+  const skins=[["blue","Blue"],["red","Red"],["green","Green"],["purple","Purple"],["yellow","Yellow"]];
 
   const html=`
     <div class="closeRow">
       <h1>👤 Karakter</h1>
       <button class="close" onclick="window.closePanel()">✕</button>
     </div>
-
-    <p>
-      Karakter dapat diubah kapan saja.
-    </p>
 
     <h3>Wajah</h3>
     <div class="cards">
@@ -2839,11 +2633,8 @@ function showCharacter(){
 }
 
 window.setCustomization=(type,value)=>{
-
   if(type==="skin" && value!=="blue"){
-
     const id="skin_"+value;
-
     if(!state.inventory.includes(id)){
       toast("Beli skin ini di Shop terlebih dahulu.");
       return;
@@ -2851,11 +2642,8 @@ window.setCustomization=(type,value)=>{
   }
 
   state.customization[type]=value;
-
   createPlayer();
-
   scheduleSave();
-
   showCharacter();
 };
 
@@ -2864,9 +2652,7 @@ window.setCustomization=(type,value)=>{
 ========================================================= */
 
 function showInventory(){
-
   const names={};
-
   SHOP_ITEMS.forEach(i=>names[i.id]=i.name);
 
   const html=`
@@ -2890,13 +2676,10 @@ function showInventory(){
 }
 
 /* =========================================================
-   ACTIVITIES
+   ACTIVITIES & QUESTS
 ========================================================= */
 
 function showQuests(){
-
-  const xpNeeded=xpRequired();
-
   const html=`
     <div class="closeRow">
       <h1>🏆 Aktivitas</h1>
@@ -2906,7 +2689,7 @@ function showQuests(){
     <div class="quest">
       <div class="questTop">
         <strong>🌎 Explorer</strong>
-        <span>${state.quests.explorer}/5</span>
+        <span>${Math.floor(state.quests.explorer)}/5</span>
       </div>
       <div class="progress">
         <div style="width:${Math.min(100,state.quests.explorer/5*100)}%"></div>
@@ -2930,41 +2713,14 @@ function showQuests(){
       </div>
     </div>
 
-    <div class="quest">
-      <div class="questTop">
-        <strong>🎁 Daily Reward</strong>
-        <span>${state.daily.claimed?"CLAIMED":"READY"}</span>
-      </div>
-      <button class="primary" style="margin-top:10px;width:100%"
-        onclick="window.claimDaily();window.showQuestsAgain()">
-        ${state.daily.claimed?"REWARD SUDAH DIAMBIL":"CLAIM +100 COINS +25 XP"}
-      </button>
-    </div>
-
-    <div class="quest">
-      <div class="questTop">
-        <strong>⭐ Level</strong>
-        <span>${state.level} / 10</span>
-      </div>
-      <div class="progress">
-        <div style="width:${Math.min(100,state.level/10*100)}%"></div>
-      </div>
-    </div>
-
     <h2>🏅 Achievements</h2>
-
     ${
       state.achievements.length
-      ?
-      state.achievements.map(a=>
-        `<div class="card">${a}</div>`
-      ).join("")
-      :
-      `<p>Belum ada achievement. Jelajahi dunia!</p>`
+      ? state.achievements.map(a=>`<div class="card">${a}</div>`).join("")
+      : `<p>Belum ada achievement. Jelajahi dunia!</p>`
     }
 
     <h2>⚡ Mini Game</h2>
-
     <div class="card">
       <h3>Coin Rush</h3>
       <p>Kumpulkan coin sebanyak mungkin dalam 30 detik.</p>
@@ -2979,22 +2735,15 @@ function showQuests(){
 }
 
 /* =========================================================
-   WORLD PANEL
+   WORLD MAP PANEL
 ========================================================= */
 
 function showWorld(){
-
   const html=`
     <div class="closeRow">
       <h1>🌎 Dunia</h1>
       <button class="close" onclick="window.closePanel()">✕</button>
     </div>
-
-    <p>
-      Semua wilayah terbuka. Tidak ada level requirement.
-      Teleport ke area mana pun.
-    </p>
-
     <div class="cards">
       ${Object.entries(AREA_DATA).map(([id,d])=>`
         <div class="card">
@@ -3018,11 +2767,10 @@ window.teleportToArea=id=>{
 };
 
 /* =========================================================
-   SETTINGS
+   SETTINGS & DATA MANAGEMENT
 ========================================================= */
 
 function showSettings(){
-
   const html=`
     <div class="closeRow">
       <h1>⚙ Pengaturan</h1>
@@ -3032,7 +2780,6 @@ function showSettings(){
     <div class="card">
       <h3>Kualitas Grafis</h3>
       <p>Kualitas saat ini: ${state.settings.quality}</p>
-
       <div class="cards">
         <button onclick="window.setQuality('low')">LOW</button>
         <button onclick="window.setQuality('medium')">MEDIUM</button>
@@ -3051,8 +2798,7 @@ function showSettings(){
       <h3>Data</h3>
       <button onclick="window.saveManual()">💾 SIMPAN SEKARANG</button>
       <button class="danger" onclick="window.resetPlayerBuildings()">🗑 RESET PLAYER BUILDINGS</button>
-      <button class="danger" onclick="window.resetData()">RESET DATA
-      </button>
+      <button class="danger" onclick="window.resetData()">RESET DATA</button>
     </div>
   `;
 
@@ -3061,27 +2807,11 @@ function showSettings(){
 }
 
 window.setQuality=q=>{
-
   state.settings.quality=q;
-
-  const dpr=
-    q==="low"
-    ?1
-    :q==="medium"
-    ?Math.min(devicePixelRatio,1.25)
-    :Math.min(devicePixelRatio,1.5);
-
+  const dpr=q==="low"?1:q==="medium"?Math.min(devicePixelRatio,1.25):Math.min(devicePixelRatio,1.5);
   renderer.setPixelRatio(dpr);
-
-  const distance=
-    q==="low"?110:
-    q==="medium"?145:
-    180;
-
-  scene.fog.far=distance;
-
+  scene.fog.far=q==="low"?110:q==="medium"?145:180;
   scheduleSave();
-
   showSettings();
 };
 
@@ -3091,18 +2821,12 @@ window.toggleSound=()=>{
   showSettings();
 };
 
-window.saveManual=()=>{
-  saveGame(false);
-};
-
+window.saveManual=()=>{ saveGame(false); };
 window.resetPlayerBuildings=resetPlayerBuildings;
 
 window.resetData=()=>{
-
   if(confirm("Reset semua progress?")){
-
     localStorage.removeItem(CONFIG.saveKey);
-
     location.reload();
   }
 };
@@ -3112,7 +2836,6 @@ window.resetData=()=>{
 ========================================================= */
 
 function showHow(){
-
   panelContent.innerHTML=`
     <div class="closeRow">
       <h1>❔ Cara Bermain</h1>
@@ -3143,28 +2866,11 @@ function showHow(){
     </div>
 
     <div class="card">
-      <h3>🌎 Dunia</h3>
-      <p>
-        Semua area langsung terbuka. Tidak ada quest wajib,
-        tidak ada level requirement, dan tidak ada area terkunci.
-      </p>
-    </div>
-
-    <div class="card">
-      <h3>💰 Coins</h3>
-      <p>
-        Kumpulkan coin di seluruh dunia dan gunakan untuk
-        membeli kosmetik karakter.
-      </p>
-    </div>
-
-    <div class="card">
       <h3>🏗️ Build Mode</h3>
       <p>
-        Tekan 🧱 BUILD atau B. Semua block gratis dan unlimited.
-        Pilih block → arahkan kamera → PLACE. Gunakan SELECT,
-        DELETE, ROTATE, COPY, UNDO/REDO, dan SAVE.
-        Wheel mouse atau pinch untuk zoom.
+        Tekan 🧱 BUILD atau B. Semua block gratis dan unlimited.<br>
+        Pilih block → arahkan kamera → PLACE.<br>
+        Gunakan SELECT, DELETE, ROTATE, COPY, UNDO/REDO, dan SAVE.
       </p>
     </div>
   `;
@@ -3173,60 +2879,37 @@ function showHow(){
 }
 
 /* =========================================================
-   DIALOG
+   DIALOG & PANELS
 ========================================================= */
 
 function showDialog(title,text){
-
   $("dialogTitle").textContent=title;
   $("dialogText").textContent=text;
-
   dialog.classList.remove("hidden");
 }
 
-function closeDialog(){
-  dialog.classList.add("hidden");
-}
-
-/* =========================================================
-   PAUSE
-========================================================= */
+function closeDialog(){ dialog.classList.add("hidden"); }
 
 function togglePause(){
-
   if(!gameStarted) return;
-
   paused=!paused;
-
   if(paused){
-
     saveGame(true);
     pause.classList.remove("hidden");
-
   }else{
-
     pause.classList.add("hidden");
     clock.getDelta();
   }
 }
 
-/* =========================================================
-   PANEL
-========================================================= */
-
-function closePanel(){
-
-  panelOverlay.classList.add("hidden");
-}
-
+function closePanel(){ panelOverlay.classList.add("hidden"); }
 window.closePanel=closePanel;
 
 /* =========================================================
-   MENU
+   MAIN MENU & GAME LOOP CONTROL
 ========================================================= */
 
 function openMainMenu(){
-
   gameStarted=false;
   paused=false;
   miniGameActive=false;
@@ -3242,16 +2925,12 @@ function openMainMenu(){
   $("buildModeBtn").classList.remove("show");
 
   resetJoystick();
-
   menu.classList.remove("hidden");
-
   saveGame(true);
 }
 
 function startGame(){
-
   menu.classList.add("hidden");
-
   hud.classList.remove("hidden");
   mobile.classList.remove("hidden");
 
@@ -3259,12 +2938,8 @@ function startGame(){
   paused=false;
   $("buildModeBtn").classList.add("show");
 
-  if(!player){
-    createPlayer();
-  }
-
+  if(!player){ createPlayer(); }
   toast("🎮 Selamat bermain!");
-
   clock.getDelta();
 }
 
@@ -3277,67 +2952,48 @@ let coinRushTime=0;
 let coinRushCoins=0;
 
 function startCoinRush(){
-
   closePanel();
-
   if(miniGameActive) return;
 
   miniGameActive=true;
-
   coinRushTime=30;
   coinRushCoins=0;
 
   $("miniScore").textContent="0";
   $("miniTimer").textContent="30";
-
   miniGame.classList.remove("hidden");
 
-  /* respawn Fun Park coins */
   for(const c of coins){
-
     if(c.area==="park"){
-
       c.collected=false;
       c.mesh.visible=true;
     }
   }
 
   teleportTo("park");
-
   toast("⚡ COIN RUSH DIMULAI!");
-
   if(!gameStarted) startGame();
 }
 
 window.startCoinRush=startCoinRush;
 
 function updateMiniGame(dt){
-
   if(!miniGameActive || paused) return;
 
   coinRushTime-=dt;
-
-  $("miniTimer").textContent=
-    Math.max(0,Math.ceil(coinRushTime));
+  $("miniTimer").textContent=Math.max(0,Math.ceil(coinRushTime));
 
   if(coinRushTime<=0){
-
     endMiniGame();
   }
 }
 
 function endMiniGame(){
-
   if(!miniGameActive) return;
-
   miniGameActive=false;
-
   miniGame.classList.add("hidden");
 
-  const reward=
-    50+
-    coinRushCoins*10;
-
+  const reward=50+coinRushCoins*10;
   addCoins(reward);
   addXP(coinRushCoins*5);
 
@@ -3345,121 +3001,76 @@ function endMiniGame(){
     unlockAchievement("rush");
   }
 
-  toast(
-    "⚡ Coin Rush selesai! "+
-    coinRushCoins+
-    " coin → hadiah "+reward+" Coins"
-  );
+  toast("⚡ Coin Rush selesai! "+coinRushCoins+" coin → hadiah "+reward+" Coins");
 }
 
 /* =========================================================
-   DAILY
+   DAILY REWARD
 ========================================================= */
 
 function checkDaily(){
-
-  const now=new Date();
-  const date=[
-    now.getFullYear(),
-    String(now.getMonth()+1).padStart(2,"0"),
-    String(now.getDate()).padStart(2,"0")
-  ].join("-");
-
+  const date=new Date().toISOString().slice(0,10);
   if(state.daily.date!==date){
-
     state.daily.date=date;
     state.daily.claimed=false;
   }
 }
 
 function claimDaily(){
-
   checkDaily();
-
   if(state.daily.claimed){
-
     toast("🎁 Reward hari ini sudah diambil.");
     return;
   }
 
   state.daily.claimed=true;
-
   addCoins(100);
   addXP(25);
-
   toast("🎁 Daily Reward +100 Coins");
-
   scheduleSave();
 }
 
 /* =========================================================
-   HUD
+   HUD & TOAST
 ========================================================= */
 
 function updateHUD(){
-
   $("coinText").textContent=state.coins;
   $("levelText").textContent=state.level;
-
-  $("xpText").textContent=
-    `${state.xp} / ${xpRequired()}`;
+  $("xpText").textContent=`${state.xp} / ${xpRequired()}`;
 }
-
-/* =========================================================
-   TOAST
-========================================================= */
 
 let toastTimer;
 
 function toast(text){
-
   const el=$("toast");
-
   el.textContent=text;
-
   el.classList.add("show");
 
   clearTimeout(toastTimer);
-
   toastTimer=setTimeout(()=>{
     el.classList.remove("show");
   },2200);
 }
 
 /* =========================================================
-   BUTTON EVENTS
+   EVENT BINDINGS
 ========================================================= */
 
 $("playBtn").onclick=startGame;
-
 $("characterBtn").onclick=showCharacter;
-
 $("shopBtn").onclick=showShop;
-
 $("inventoryBtn").onclick=showInventory;
-
 $("worldBtn").onclick=showWorld;
-
 $("questsBtn").onclick=showQuests;
-
 $("settingsBtn").onclick=showSettings;
-
 $("howBtn").onclick=showHow;
-
 $("openMenu").onclick=togglePause;
-
 $("resumeBtn").onclick=togglePause;
-
-$("pauseSaveBtn").onclick=()=>{
-  saveGame(false);
-};
-
+$("pauseSaveBtn").onclick=()=>{ saveGame(false); };
 $("pauseMenuBtn").onclick=openMainMenu;
-
 $("dialogClose").onclick=closeDialog;
-
 $("dialogOk").onclick=closeDialog;
-
 
 /* BUILD UI EVENTS */
 function bindBuildUI(){
@@ -3475,63 +3086,63 @@ function bindBuildUI(){
  renderer.domElement.addEventListener("pointerdown",e=>{if(!buildMode)return;e.preventDefault();setBuildPointer(e);if(buildTool==="place")placeBuilding();else if(["select","delete","rotate","copy"].includes(buildTool))handleBuildPointer(e)});
  cameraZone.addEventListener("pointermove",e=>{if(buildMode){setBuildPointer(e);updateGhost()}});
  cameraZone.addEventListener("pointerdown",e=>{if(buildMode&&!pinching){setBuildPointer(e);if(buildTool==="place")placeBuilding();else handleBuildPointer(e)}});
- window.addEventListener("keydown",e=>{if(!gameStarted)return;if(e.code==="KeyB"){e.preventDefault();toggleBuildMode()}if(buildMode&&e.code==="KeyR"){e.preventDefault();rotateSelectedBuilding()}if(buildMode&&e.code==="KeyX"){e.preventDefault();setBuildTool("delete")}if(buildMode&&e.code==="KeyC"){e.preventDefault();setBuildTool("copy")}if(buildMode&&(e.ctrlKey||e.metaKey)&&e.code==="KeyZ"){e.preventDefault();undoBuild()}if(buildMode&&(e.ctrlKey||e.metaKey)&&e.code==="KeyY"){e.preventDefault();redoBuild()}});
+ window.addEventListener("keydown",e=>{
+   if(!gameStarted)return;
+   if(e.code==="KeyB"){e.preventDefault();toggleBuildMode()}
+   if(buildMode&&e.code==="KeyR"){e.preventDefault();rotateSelectedBuilding()}
+   if(buildMode&&e.code==="KeyX"){e.preventDefault();setBuildTool("delete")}
+   if(buildMode&&e.code==="KeyC"){e.preventDefault();setBuildTool("copy")}
+   if(buildMode&&(e.ctrlKey||e.metaKey)&&e.code==="KeyZ"){e.preventDefault();undoBuild()}
+   if(buildMode&&(e.ctrlKey||e.metaKey)&&e.code==="KeyY"){e.preventDefault();redoBuild()}
+ });
 }
-function handleBuildPointer(e){const m=pickBuildAtPointer();if(!m){if(buildTool!=="place")toast("Arahkan ke block buatan pemain.");return}selectedBuildId=m.userData.buildId;updateSelection();if(buildTool==="delete")deleteSelectedBuilding();else if(buildTool==="rotate")rotateSelectedBuilding();else if(buildTool==="copy")duplicateSelectedBuilding()}
+
+function handleBuildPointer(e){
+  const m=pickBuildAtPointer();
+  if(!m){if(buildTool!=="place")toast("Arahkan ke block buatan pemain.");return}
+  selectedBuildId=m.userData.buildId;
+  updateSelection();
+  if(buildTool==="delete")deleteSelectedBuilding();
+  else if(buildTool==="rotate")rotateSelectedBuilding();
+  else if(buildTool==="copy")duplicateSelectedBuilding();
+}
+
 bindBuildUI();
+
 /* =========================================================
-   RESIZE
+   RESIZE & VISIBILITY
 ========================================================= */
 
 window.addEventListener("resize",()=>{
-
   camera.aspect=innerWidth/innerHeight;
   camera.updateProjectionMatrix();
-
-  renderer.setSize(
-    innerWidth,
-    innerHeight
-  );
+  renderer.setSize(innerWidth,innerHeight);
 });
 
-/* =========================================================
-   VISIBILITY
-========================================================= */
-
 document.addEventListener("visibilitychange",()=>{
-
   if(document.hidden && gameStarted && !paused){
-
     paused=true;
     pause.classList.remove("hidden");
     saveGame(true);
   }
 });
 
-/* =========================================================
-   SAVE BEFORE LEAVE
-========================================================= */
-
 window.addEventListener("beforeunload",()=>{
-
   if(player){
-
     state.position={
       x:player.position.x,
       y:player.position.y,
       z:player.position.z
     };
   }
-
   saveGame(true);
 });
 
 /* =========================================================
-   MAIN UPDATE
+   MAIN UPDATE LOOP
 ========================================================= */
 
 function update(dt){
-
   if(!gameStarted || paused) return;
 
   updateMovement(dt);
@@ -3549,61 +3160,35 @@ function update(dt){
     z:player.position.z
   };
 
-  /* explorer progress */
   if(currentArea!=="spawn"){
-    state.quests.explorer=
-      Math.min(
-        5,
-        state.quests.explorer+dt*.015
-      );
+    state.quests.explorer=Math.min(5, state.quests.explorer+dt*.015);
   }
 
-  /* NPC idle animation */
+  /* NPC Idle Animation */
   for(const n of npcs){
-
     n.group.rotation.y+=dt*.15;
-
-    const bob=
-      Math.sin(performance.now()*.002+n.group.position.x)
-      *.04;
-
+    const bob=Math.sin(performance.now()*.002+n.group.position.x)*.04;
     n.group.position.y=bob;
   }
 
-  /* portal animation */
+  /* Portal Animation */
   for(const p of portals){
-
     p.group.rotation.y+=dt*.8;
   }
 }
 
-/* =========================================================
-   RENDER LOOP
-========================================================= */
-
 function loop(){
-
   requestAnimationFrame(loop);
-
-  const dt=Math.min(
-    clock.getDelta(),
-    .05
-  );
-
+  const dt=Math.min(clock.getDelta(), .05);
   update(dt);
-
-  renderer.render(
-    scene,
-    camera
-  );
+  renderer.render(scene, camera);
 }
 
 /* =========================================================
-   LOADING
+   BOOTSTRAP LOADING
 ========================================================= */
 
 async function boot(){
-
   const steps=[
     "Menyiapkan renderer...",
     "Membangun Spawn City...",
@@ -3618,13 +3203,9 @@ async function boot(){
   ];
 
   for(let i=0;i<steps.length;i++){
-
     loadingText.textContent=steps[i];
-
-    progress.style.width=
-      ((i+1)/steps.length*100)+"%";
-
-    await new Promise(r=>setTimeout(r,70));
+    progress.style.width=((i+1)/steps.length*100)+"%";
+    await new Promise(r=>setTimeout(r,60));
   }
 
   createWorld();
@@ -3633,37 +3214,21 @@ async function boot(){
   checkDaily();
   updateHUD();
 
-  /* daily reward is intentionally not auto-claimed */
   loadingText.textContent="Selesai!";
-
-  await new Promise(r=>setTimeout(r,250));
+  await new Promise(r=>setTimeout(r,200));
 
   loading.classList.add("hidden");
-
   loop();
 }
 
 boot();
 
-/* =========================================================
-   DAILY REWARD HOTKEY / EASY ACCESS
-========================================================= */
-
 window.claimDaily=claimDaily;
-window.showQuestsAgain=()=>{
-  checkDaily();
-  showQuests();
-};
-
-/* =========================================================
-   DEBUG / SAFETY
-========================================================= */
 
 window.addEventListener("error",e=>{
   console.error("BLOCKVERSE ERROR:",e.error||e.message);
 });
 
 </script>
-
 </body>
 </html>
