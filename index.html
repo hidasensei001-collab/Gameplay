@@ -1220,7 +1220,7 @@ function renderBlueprintLibrary(){
 }
 function setBuildPivot(){state.buildSettings.pivot={x:player.position.x,z:player.position.z};scheduleSave();toast(`🎯 Pivot mirror: ${player.position.x.toFixed(1)}, ${player.position.z.toFixed(1)}`)}
 function toggleFreeform(){state.buildSettings.freeform=!state.buildSettings.freeform;toast(state.buildSettings.freeform?"🌀 FREEFORM ON • block visual, NON-COLLIDABLE":"🧱 GRID ON • block solid");updateBuildToggles();setBuildTool(buildTool)}
-function toggleDragPaint(){state.buildSettings.dragPaint=!state.buildSettings.dragPaint;updateBuildToggles();toast("🖌 Drag-to-paint "+(state.buildSettings.dragPaint?"ON":"OFF"))}
+function toggleDragPaint(){state.buildSettings.dragPaint=!state.buildSettings.dragPaint;updateBuildToggles();toast("NF Drag-to-paint "+(state.buildSettings.dragPaint?"ON":"OFF"))}
 function toggleMirror(){state.buildSettings.mirror=!state.buildSettings.mirror;updateBuildToggles();toast("🪞 Mirror "+(state.buildSettings.mirror?"ON":"OFF"))}
 function cycleMirrorAxis(){state.buildSettings.mirrorAxis=state.buildSettings.mirrorAxis==="X"?"Z":"X";updateBuildToggles();toast("🪞 Mirror axis "+state.buildSettings.mirrorAxis)}
 function updateBuildToggles(){
@@ -2149,8 +2149,11 @@ function updateMovement(dt){
   climbState="NONE";climbTarget=null;manualClimb=false;
   const speed=(sprinting||keys.ShiftLeft||keys.ShiftRight)?CONFIG.sprintSpeed:CONFIG.walkSpeed;
   const sin=Math.sin(camYaw),cos=Math.cos(camYaw);
+  
+  // PERBAIKAN 1: Tanda koordinat (x) pergerakan relatif kamera
   const dx=(move.x*cos+move.y*sin)*speed*dt;
-  const dz=(-move.x*sin+move.y*cos)*speed*dt;
+  const dz=(move.x*sin+move.y*cos)*speed*dt;
+  
   const currentY=player.position.y;
   // Auto step-up kecil: bila tujuan punya lantai lebih tinggi, naikkan langsung sampai MAX_STEP_UP
   if(dx!==0){const nx=player.position.x+dx;if(!collidesAt(nx,currentY,player.position.z)){player.position.x=nx}else{const step=getGroundHeight(nx,currentY,player.position.z);if(step-currentY<=MAX_STEP_UP+.05){player.position.x=nx;player.position.y=Math.max(player.position.y,step);velocityY=0;onGround=true;}}}
@@ -2158,7 +2161,16 @@ function updateMovement(dt){
   const ground=getGroundHeight(player.position.x,player.position.y,player.position.z);
   if(player.position.y<=ground+.1&&velocityY<=0){player.position.y=ground;velocityY=0;onGround=true}else{onGround=false;velocityY-=CONFIG.gravity*dt;player.position.y+=velocityY*dt;if(player.position.y<=ground){player.position.y=ground;velocityY=0;onGround=true;}}
   if(player.position.y<-15)respawn();
-  const moving=Math.hypot(dx,dz)>.001;if(moving){const targetAngle=Math.atan2(dx,dz);let diff=targetAngle-playerVisual.rotation.y;while(diff<-Math.PI)diff+=Math.PI*2;while(diff>Math.PI)diff-=Math.PI*2;playerVisual.rotation.y+=diff*Math.min(1,dt*15)}
+  
+  // PERBAIKAN 2: Orientasi visual karakter diputar 180° (+ Math.PI)
+  const moving=Math.hypot(dx,dz)>.001;
+  if(moving){
+    const targetAngle=Math.atan2(dx,dz)+Math.PI;
+    let diff=targetAngle-playerVisual.rotation.y;
+    while(diff<-Math.PI)diff+=Math.PI*2;
+    while(diff>Math.PI)diff-=Math.PI*2;
+    playerVisual.rotation.y+=diff*Math.min(1,dt*15);
+  }
   animatePlayer(dt,moving);
 }
 
@@ -3033,7 +3045,7 @@ window.resetData=()=>{
 function showHow(){
   panelContent.innerHTML=`
     <div class="closeRow">
-      <h1>❔ Cara Bermain</h1>
+      <h1>机制 Cara Bermain</h1>
       <button class="close" onclick="window.closePanel()">✕</button>
     </div>
 
